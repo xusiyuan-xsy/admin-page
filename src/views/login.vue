@@ -58,7 +58,7 @@
       </el-form-item>
     </el-form>
     <!--  底部  -->
-    <div class="el-login-footer">
+    <div class="el-login-footer" v-if="footerVisible">
       <span>{{ footerContent }}</span>
     </div>
   </div>
@@ -171,7 +171,7 @@ getCookie()
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-image: url("../assets/images/login-background.jpg");
+  background-image: url("../assets/images/login-background.png");
   background-size: cover;
 }
 .title {

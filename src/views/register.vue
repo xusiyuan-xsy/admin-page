@@ -69,7 +69,7 @@
       </el-form-item>
     </el-form>
     <!--  底部  -->
-    <div class="el-register-footer">
+    <div class="el-register-footer" v-if="footerVisible">
       <span>{{ footerContent }}</span>
     </div>
   </div>
