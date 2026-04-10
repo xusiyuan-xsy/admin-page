@@ -210,6 +210,7 @@ import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
 import TreePanel from "@/components/TreePanel"
 import { changeUserStatus, listUser, resetUserPwd, delUser, getUser, updateUser, addUser, deptTreeSelect } from "@/api/system/user"
+import { listPayingUser } from "@/api/system/payingUser"
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -281,7 +282,7 @@ const { queryParams, form, rules } = toRefs(data)
 /** 查询用户列表 */
 function getList() {
   loading.value = true
-  listUser(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => {
+  listPayingUser(proxy.addDateRange(queryParams.value, dateRange.value)).then(res => {
     loading.value = false
     userList.value = res.rows
     total.value = res.total
