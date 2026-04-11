@@ -1,6 +1,6 @@
 <template>
   <div class="app-container tree-sidebar-manage-wrap">
-    <tree-panel title="组织机构" :tree-data="deptOptions" search-placeholder="请输入部门名称" storage-key="dept-sidebar-width" :defaultExpandAll="true" @node-click="handleNodeClick" @refresh="getDeptTree" ref="deptTreeRef" />
+    <!-- <tree-panel title="组织机构" :tree-data="deptOptions" search-placeholder="请输入部门名称" storage-key="dept-sidebar-width" :defaultExpandAll="true" @node-click="handleNodeClick" @refresh="getDeptTree" ref="deptTreeRef" /> -->
     <div class="tree-sidebar-content">
       <div class="content-inner">
         <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
@@ -45,11 +45,11 @@
 
         <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" align="center" />
-          <el-table-column label="用户编号" align="center" key="userId" prop="userId" v-if="columns.userId.visible" />
-          <el-table-column label="用户名称" align="center" key="userName" prop="userName" v-if="columns.userName.visible" :show-overflow-tooltip="true" />
+          <el-table-column label="用户编号" align="center" key="id" prop="id" v-if="columns.id.visible" />
+          <el-table-column label="用户名称" align="center" key="name" prop="name" v-if="columns.name.visible" :show-overflow-tooltip="true" />
           <el-table-column label="用户昵称" align="center" key="nickName" prop="nickName" v-if="columns.nickName.visible" :show-overflow-tooltip="true" />
           <el-table-column label="部门" align="center" key="deptName" prop="dept.deptName" v-if="columns.deptName.visible" :show-overflow-tooltip="true" />
-          <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns.phonenumber.visible" width="120" />
+          <el-table-column label="手机号码" align="center" key="phone" prop="phone" v-if="columns.phone.visible" width="120" />
           <el-table-column label="状态" align="center" key="status" v-if="columns.status.visible">
             <template #default="scope">
               <el-switch
@@ -88,39 +88,24 @@
 
     <!-- 添加或修改用户配置对话框 -->
     <el-dialog :title="title" v-model="open" width="720px" append-to-body>
-      <el-form :model="form" :rules="rules" ref="userRef" label-width="80px">
+      <el-form :model="form" :rules="rules" ref="payingUserRef" label-width="80px">
         <el-row>
           <el-col :span="12">
-            <el-form-item label="用户昵称" prop="nickName">
-              <el-input v-model="form.nickName" placeholder="请输入用户昵称" maxlength="30" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="归属部门" prop="deptId">
-              <el-tree-select v-model="form.deptId" :data="enabledDeptOptions" :props="{ value: 'id', label: 'label', children: 'children' }" value-key="id" placeholder="请选择归属部门" clearable check-strictly />
+            <el-form-item label="用户昵称" prop="name">
+              <el-input v-model="form.name" placeholder="请输入用户昵称" maxlength="30" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="12">
-            <el-form-item label="手机号码" prop="phonenumber">
-              <el-input v-model="form.phonenumber" placeholder="请输入手机号码" maxlength="11" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+            <el-form-item label="手机号码" prop="phone">
+              <el-input v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="12">
-            <el-form-item v-if="form.userId == undefined" label="用户名称" prop="userName">
-              <el-input v-model="form.userName" placeholder="请输入用户名称" maxlength="30" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item v-if="form.userId == undefined" label="用户密码" prop="password">
+            <el-form-item v-if="form.id == undefined" label="用户密码" prop="password">
               <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password />
             </el-form-item>
           </el-col>
@@ -243,11 +228,11 @@ const upload = reactive({
 })
 // 列显隐信息
 const columns = ref({
-  userId: { label: '用户编号', visible: true },
-  userName: { label: '用户名称', visible: true },
+  id: { label: '用户编号', visible: true },
+  name: { label: '用户名称', visible: true },
   nickName: { label: '用户昵称', visible: true },
   deptName: { label: '部门', visible: true },
-  phonenumber: { label: '手机号码', visible: true },
+  phone: { label: '手机号码', visible: true },
   status: { label: '状态', visible: true },
   createTime: { label: '创建时间', visible: true }
 })
@@ -257,13 +242,13 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    userName: undefined,
-    phonenumber: undefined,
+    name: undefined,
+    phone: undefined,
     status: undefined,
     deptId: undefined
   },
   rules: {
-    userName: [{ required: true, message: "用户名称不能为空", trigger: "blur" }, { min: 2, max: 20, message: "用户名称长度必须介于 2 和 20 之间", trigger: "blur" }],
+    name: [{ required: true, message: "用户名称不能为空", trigger: "blur" }, { min: 2, max: 20, message: "用户名称长度必须介于 2 和 20 之间", trigger: "blur" }],
     nickName: [{ required: true, message: "用户昵称不能为空", trigger: "blur" }],
     password: [{ required: true, message: "用户密码不能为空", trigger: "blur" }, { min: 5, max: 20, message: "用户密码长度必须介于 5 和 20 之间", trigger: "blur" }, { pattern: /^[^<>"'|\\]+$/, message: "不能包含非法字符：< > \" ' \\\ |", trigger: "blur" }],
     email: [{ type: "email", message: "请输入正确的邮箱地址", trigger: ["blur", "change"] }],
@@ -466,7 +451,7 @@ function reset() {
     postIds: [],
     roleIds: []
   }
-  proxy.resetForm("userRef")
+  proxy.resetForm("payingUserRef")
 }
 
 /** 取消按钮 */
@@ -505,16 +490,16 @@ function handleUpdate(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["userRef"].validate(valid => {
+  proxy.$refs["payingUserRef"].validate(valid => {
     if (valid) {
       if (form.value.userId != undefined) {
-        updateUser(form.value).then(() => {
+        updatePayingUser(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
           open.value = false
           getList()
         })
       } else {
-        addUser(form.value).then(() => {
+        addPayingUser(form.value).then(() => {
           proxy.$modal.msgSuccess("新增成功")
           open.value = false
           getList()

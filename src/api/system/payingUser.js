@@ -9,3 +9,21 @@ export function listPayingUser(query) {
     params: query
   })
 }
+
+// 新增用户
+export function addPayingUser(data) {
+    return request({
+      url: '/system/payingUsers',
+      method: 'post',
+      data: data
+    })
+  }
+  
+// 修改用户
+export function updatePayingUser(data) {
+return request({
+    url: '/system/payingUsers',
+    method: 'put',
+    data: data
+})
+}
