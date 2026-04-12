@@ -10,6 +10,14 @@ export function listPayingUser(query) {
   })
 }
 
+// 查询付费用户详细
+export function getPayingUser(id) {
+  return request({
+    url: '/system/payingUsers/' + parseStrEmpty(id),
+    method: 'get'
+  })
+}
+
 // 新增用户
 export function addPayingUser(data) {
     return request({
@@ -21,9 +29,17 @@ export function addPayingUser(data) {
   
 // 修改用户
 export function updatePayingUser(data) {
-return request({
+  return request({
     url: '/system/payingUsers',
     method: 'put',
     data: data
-})
+  })
+}
+
+// 删除付费用户
+export function delPayingUser(id) {
+  return request({
+    url: '/system/payingUsers/' + id,
+    method: 'delete'
+  })
 }
