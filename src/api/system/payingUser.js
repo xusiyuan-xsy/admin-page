@@ -43,3 +43,29 @@ export function delPayingUser(id) {
     method: 'delete'
   })
 }
+
+// 根据 payingId 查询需求
+export function getPayingRequirement(payingId) {
+  return request({
+    url: '/system/payingRequirement/' + payingId,
+    method: 'get'
+  })
+}
+
+// 新增需求
+export function addPayingRequirement(data) {
+  return request({
+    url: '/system/payingRequirement',
+    method: 'post',
+    data: data
+  })
+}
+
+// 修改需求
+export function updatePayingRequirement(data) {
+  return request({
+    url: '/system/payingRequirement',
+    method: 'put',
+    data: data
+  })
+}

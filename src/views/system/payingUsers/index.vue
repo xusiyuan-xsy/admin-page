@@ -74,17 +74,18 @@
           <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-tooltip content="修改" placement="top">
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payingUsers:edit']"></el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
-                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:user:remove']"></el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payingUsers:remove']"></el-button>
               </el-tooltip>
-              <el-tooltip content="重置密码" placement="top">
+              <el-tooltip :content="scope.row.requirement ? '修改需求' : '新增需求'" placement="top">
+                <el-button link type="primary" icon="document" @click="handleDocument(scope.row)" v-hasPermi="['system:payingUsers:document']"></el-button>
+              </el-tooltip>
+              <!-- <el-tooltip content="重置密码" placement="top">
                 <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['system:user:resetPwd']"></el-button>
-              </el-tooltip>
-              <el-tooltip content="分配角色" placement="top">
-                <el-button link type="primary" icon="CircleCheck" @click="handleAuthRole(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
-              </el-tooltip>
+              </el-tooltip> -->
+              
             </template>
           </el-table-column>
         </el-table>
@@ -280,6 +281,15 @@
       </template>
     </el-dialog>
 
+    <!-- 需求弹窗 -->
+    <requirement-dialog
+      v-if="requirementDialog.visible"
+      v-model="requirementDialog.visible"
+      :paying-id="requirementDialog.payingId"
+      :requirement="requirementDialog.requirement"
+      @success="getList"
+    />
+
     <!-- 用户导入对话框 -->
     <el-dialog :title="upload.title" v-model="upload.open" width="400px" append-to-body>
       <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="upload.headers" :action="upload.url + '?updateSupport=' + upload.updateSupport" :disabled="upload.isUploading" :on-progress="handleFileUploadProgress" :on-success="handleFileSuccess" :on-change="handleFileChange" :on-remove="handleFileRemove" :auto-upload="false" drag>
@@ -310,10 +320,17 @@ import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
 import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
+import RequirementDialog from './requirementDialog.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
 const { proxy } = getCurrentInstance()
+
+const requirementDialog = reactive({
+  visible: false,
+  payingId: undefined,
+  hasRequirement: false
+})
 const { sys_normal_disable, sys_user_sex } = proxy.useDict("sys_normal_disable", "sys_user_sex")
 
 const userList = ref([])
@@ -480,19 +497,11 @@ function handleCommand(command, row) {
     case "handleResetPwd":
       handleResetPwd(row)
       break
-    case "handleAuthRole":
-      handleAuthRole(row)
-      break
     default:
       break
   }
 }
 
-/** 跳转角色分配 */
-function handleAuthRole(row) {
-  const uid = row.id ?? row.userId
-  router.push("/system/user-auth/role/" + uid)
-}
 
 /** 重置密码按钮操作 */
 function handleResetPwd(row) {
@@ -676,6 +685,13 @@ function submitForm() {
       }
     }
   })
+}
+
+/** 需求按钮操作 */
+function handleDocument(row) {
+  requirementDialog.payingId = row.id
+  requirementDialog.hasRequirement = !!row.requirement
+  requirementDialog.visible = true
 }
 
 onMounted(() => {
