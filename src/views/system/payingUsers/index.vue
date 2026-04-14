@@ -1,6 +1,5 @@
 <template>
   <div class="app-container tree-sidebar-manage-wrap">
-    <!-- <tree-panel title="组织机构" :tree-data="deptOptions" search-placeholder="请输入部门名称" storage-key="dept-sidebar-width" :defaultExpandAll="true" @node-click="handleNodeClick" @refresh="getDeptTree" ref="deptTreeRef" /> -->
     <div class="tree-sidebar-content">
       <div class="content-inner">
         <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
@@ -184,14 +183,21 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="是否有车" prop="hasCar">
-              <el-select v-model="form.hasCar" placeholder="请选择" clearable style="width: 100%">
+            <el-form-item label="是否有房" prop="hasHouse">
+              <el-select v-model="form.hasHouse" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="是否有车" prop="hasCar">
+              <el-select v-model="form.hasCar" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="是否有纹身" prop="hasTattoo">
               <el-select v-model="form.hasTattoo" placeholder="请选择" clearable style="width: 100%">
@@ -199,6 +205,8 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="吸烟习惯" prop="smokeHabit">
               <el-select v-model="form.smokeHabit" placeholder="请选择" clearable style="width: 100%">
@@ -206,8 +214,6 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="饮酒习惯" prop="drinkHabit">
               <el-select v-model="form.drinkHabit" placeholder="请选择" clearable style="width: 100%">
@@ -215,6 +221,8 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="接受异地" prop="acceptLongDist">
               <el-select v-model="form.acceptLongDist" placeholder="请选择" clearable style="width: 100%">
@@ -222,8 +230,6 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
@@ -302,7 +308,6 @@
 <script setup name="User">
 import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
-import TreePanel from "@/components/TreePanel"
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
 import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
 
@@ -321,7 +326,6 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
-const deptOptions = ref(undefined)
 const enabledDeptOptions = ref(undefined)
 const initPassword = ref(undefined)
 const yesNoOptions = [
@@ -346,7 +350,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/system/user/importData"
+  url: import.meta.env.VITE_APP_BASE_API + "/system/payingUsers/importData"
 })
 // 列显隐信息
 const columns = ref({
@@ -417,13 +421,6 @@ function getList() {
   })
 }
 
-/** 查询部门下拉树结构 */
-function getDeptTree() {
-  deptTreeSelect().then(response => {
-    deptOptions.value = response.data
-    enabledDeptOptions.value = filterDisabledDept(JSON.parse(JSON.stringify(response.data)))
-  })
-}
 
 /** 过滤禁用的部门 */
 function filterDisabledDept(deptList) {
@@ -589,6 +586,7 @@ function reset() {
     currentCity: undefined,
     hometown: undefined,
     houseDesc: undefined,
+    hasHouse: undefined,
     hasCar: undefined,
     hasTattoo: undefined,
     smokeHabit: undefined,
@@ -681,7 +679,6 @@ function submitForm() {
 }
 
 onMounted(() => {
-  getDeptTree()
   getList()
   proxy.getConfigKey("sys.user.initPassword").then(response => {
     initPassword.value = response.msg
