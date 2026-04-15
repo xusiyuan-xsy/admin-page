@@ -82,6 +82,9 @@
               <el-tooltip :content="scope.row.requirement ? '修改需求' : '新增需求'" placement="top">
                 <el-button link type="primary" icon="document" @click="handleDocument(scope.row)" v-hasPermi="['system:payingUsers:document']"></el-button>
               </el-tooltip>
+              <el-tooltip content="查询匹配" placement="top">
+                <el-button link type="primary" icon="search" v-if="scope.row.requirement" @click="handleQueryMatching(scope.row)" v-hasPermi="['system:payingUsers:queryMatching']"></el-button>
+              </el-tooltip>
               <!-- <el-tooltip content="重置密码" placement="top">
                 <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['system:user:resetPwd']"></el-button>
               </el-tooltip> -->
@@ -96,9 +99,10 @@
     <!-- 添加或修改用户配置对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form :model="form" :rules="rules" ref="payingUserRef" label-width="108px">
+        <!-- 必填项 -->
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="姓名" prop="name">
+            <el-form-item label="姓名" prop="name" required>
               <el-input v-model="form.name" placeholder="请输入姓名" maxlength="50" />
             </el-form-item>
           </el-col>
@@ -114,37 +118,109 @@
               <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="性别" prop="sex">
+            <el-form-item label="性别" prop="sex" required>
               <el-select v-model="form.sex" placeholder="请选择" clearable style="width: 100%">
                 <el-option v-for="dict in sys_user_sex" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="出生年份" prop="birthYear">
+            <el-form-item label="出生年份" prop="birthYear" required>
               <el-input-number v-model="form.birthYear" :min="1940" :max="2030" controls-position="right" placeholder="年份" style="width: 100%" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="身高(cm)" prop="height">
-              <el-input-number v-model="form.height" :min="50" :max="250" controls-position="right" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="体重" prop="weight">
-              <el-input-number v-model="form.weight" :min="20" :max="300" controls-position="right" style="width: 100%" />
+            <el-form-item label="身高(cm)" prop="height" required>
+              <el-input-number v-model="form.height" :min="100" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="学历" prop="education">
+            <el-form-item label="体重(kg)" prop="weight" required>
+              <el-input-number v-model="form.weight" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="现居城市" prop="currentCity" required>
+              <el-input v-model="form.currentCity" placeholder="请输入现居城市" maxlength="80" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="家乡" prop="hometown" required>
+              <el-input v-model="form.hometown" placeholder="请输入家乡" maxlength="80" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="接受异地" prop="acceptLongDist" required>
+              <el-select v-model="form.acceptLongDist" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="是否有车" prop="hasCar" required>
+              <el-select v-model="form.hasCar" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="是否有纹身" prop="hasTattoo" required>
+              <el-select v-model="form.hasTattoo" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="吸烟习惯" prop="smokeHabit" required>
+              <el-select v-model="form.smokeHabit" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="饮酒习惯" prop="drinkHabit" required>
+              <el-select v-model="form.drinkHabit" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="是否有房" prop="hasHouse" required>
+              <el-select v-model="form.hasHouse" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="住房情况" prop="houseDesc">
+              <el-input v-model="form.houseDesc" placeholder="如：商品房" maxlength="80" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <!-- 非必填项 -->
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <!-- <el-form-item label="学历" prop="education">
               <el-input v-model="form.education" placeholder="请输入学历" maxlength="50" />
+            </el-form-item> -->
+            <el-form-item label="学历" prop="education">
+              <el-select v-model="form.education" placeholder="选择" clearable style="width: 100%">
+                <el-option v-for="opt in educationOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -166,71 +242,6 @@
           </el-col>
         </el-row>
         <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="现居城市" prop="currentCity">
-              <el-input v-model="form.currentCity" placeholder="请输入现居城市" maxlength="80" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="家乡" prop="hometown">
-              <el-input v-model="form.hometown" placeholder="请输入家乡" maxlength="80" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="住房情况" prop="houseDesc">
-              <el-input v-model="form.houseDesc" placeholder="如：商品房" maxlength="80" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="是否有房" prop="hasHouse">
-              <el-select v-model="form.hasHouse" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="是否有车" prop="hasCar">
-              <el-select v-model="form.hasCar" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="是否有纹身" prop="hasTattoo">
-              <el-select v-model="form.hasTattoo" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="吸烟习惯" prop="smokeHabit">
-              <el-select v-model="form.smokeHabit" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="饮酒习惯" prop="drinkHabit">
-              <el-select v-model="form.drinkHabit" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="接受异地" prop="acceptLongDist">
-              <el-select v-model="form.acceptLongDist" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="opt in yesNoOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
@@ -329,7 +340,7 @@ const { proxy } = getCurrentInstance()
 const requirementDialog = reactive({
   visible: false,
   payingId: undefined,
-  hasRequirement: false
+  requirement: {}
 })
 const { sys_normal_disable, sys_user_sex } = proxy.useDict("sys_normal_disable", "sys_user_sex")
 
@@ -343,8 +354,19 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
-const enabledDeptOptions = ref(undefined)
 const initPassword = ref(undefined)
+
+const educationOptions = [
+  { label: '小学', value: '小学' },
+  { label: '初中', value: '初中' },
+  { label: '高中', value: '高中' },
+  { label: '大专', value: '大专' },
+  { label: '本科', value: '本科' },
+  { label: '研究生', value: '研究生' },
+  { label: '博士', value: '博士' },
+  { label: '博士后', value: '博士后' }
+]
+
 const yesNoOptions = [
   { label: "否", value: "0" },
   { label: "是", value: "1" }
@@ -395,6 +417,45 @@ const data = reactive({
     deptId: undefined
   },
   rules: {
+    name: [
+      { required: true, message: "姓名不能为空", trigger: "blur" }
+    ],
+    sex: [
+      { required: true, message: "请选择性别", trigger: "change" }
+    ],
+    birthYear: [
+      { required: true, message: "出生年份不能为空", trigger: "blur" }
+    ],
+    height: [
+      { required: true, message: "身高不能为空", trigger: "blur" }
+    ],
+    weight: [
+      { required: true, message: "体重不能为空", trigger: "blur" }
+    ],
+    currentCity: [
+      { required: true, message: "现居城市不能为空", trigger: "blur" }
+    ],
+    hometown: [
+      { required: true, message: "家乡不能为空", trigger: "blur" }
+    ],
+    hasHouse: [
+      { required: true, message: "请选择是否有房", trigger: "change" }
+    ],
+    hasCar: [
+      { required: true, message: "请选择是否有车", trigger: "change" }
+    ],
+    hasTattoo: [
+      { required: true, message: "请选择是否有纹身", trigger: "change" }
+    ],
+    smokeHabit: [
+      { required: true, message: "请选择吸烟习惯", trigger: "change" }
+    ],
+    drinkHabit: [
+      { required: true, message: "请选择饮酒习惯", trigger: "change" }
+    ],
+    acceptLongDist: [
+      { required: true, message: "请选择是否接受异地", trigger: "change" }
+    ],
     phone: [
       { required: true, message: "手机号码不能为空", trigger: "blur" },
       { pattern: /^1[3-9]\d{9}$/, message: "请输入正确的手机号码", trigger: "blur" }
@@ -622,7 +683,7 @@ function cancel() {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加付费用户"
+  title.value = "添加用户"
   if (initPassword.value) {
     form.value.password = initPassword.value
   }
@@ -636,7 +697,7 @@ function handleUpdate(row) {
     form.value = response.data
     form.value.password = ""
     open.value = true
-    title.value = "修改付费用户"
+    title.value = "修改用户"
   })
 }
 
@@ -690,8 +751,12 @@ function submitForm() {
 /** 需求按钮操作 */
 function handleDocument(row) {
   requirementDialog.payingId = row.id
-  requirementDialog.hasRequirement = !!row.requirement
+  requirementDialog.requirement = row.requirement || {}
   requirementDialog.visible = true
+}
+
+function handleQueryMatching(row) {
+  console.log('row___',row);
 }
 
 onMounted(() => {
