@@ -53,7 +53,11 @@
             </template>
           </el-table-column>
           <el-table-column label="出生年份" align="center" key="birthYear" prop="birthYear" v-if="columns.birthYear.visible" width="88" />
-          <el-table-column label="学历" align="center" key="education" prop="education" v-if="columns.education.visible" :show-overflow-tooltip="true" min-width="88" />
+          <el-table-column label="学历" align="center" key="education" prop="education" v-if="columns.education.visible" min-width="88">
+            <template #default="scope">
+              <dict-tag :options="sys_user_education" :value="scope.row.education" />
+            </template>
+          </el-table-column>
           <el-table-column label="职业" align="center" key="occupation" prop="occupation" v-if="columns.occupation.visible" :show-overflow-tooltip="true" min-width="100" />
           <el-table-column label="现居城市" align="center" key="currentCity" prop="currentCity" v-if="columns.currentCity.visible" :show-overflow-tooltip="true" min-width="88" />
           <el-table-column label="月收入" align="center" key="monthlyIncome" prop="monthlyIncome" v-if="columns.monthlyIncome.visible" width="96">
@@ -218,8 +222,8 @@
               <el-input v-model="form.education" placeholder="请输入学历" maxlength="50" />
             </el-form-item> -->
             <el-form-item label="学历" prop="education">
-              <el-select v-model="form.education" placeholder="选择" clearable style="width: 100%">
-                <el-option v-for="opt in educationOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              <el-select v-model="form.education" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="opt in sys_user_education" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -342,7 +346,7 @@ const requirementDialog = reactive({
   payingId: undefined,
   requirement: {}
 })
-const { sys_normal_disable, sys_user_sex } = proxy.useDict("sys_normal_disable", "sys_user_sex")
+const { sys_normal_disable, sys_user_sex,sys_user_education } = proxy.useDict("sys_normal_disable", "sys_user_sex","sys_user_education")
 
 const userList = ref([])
 const open = ref(false)
@@ -355,17 +359,6 @@ const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
 const initPassword = ref(undefined)
-
-const educationOptions = [
-  { label: '小学', value: '小学' },
-  { label: '初中', value: '初中' },
-  { label: '高中', value: '高中' },
-  { label: '大专', value: '大专' },
-  { label: '本科', value: '本科' },
-  { label: '研究生', value: '研究生' },
-  { label: '博士', value: '博士' },
-  { label: '博士后', value: '博士后' }
-]
 
 const yesNoOptions = [
   { label: "否", value: "0" },
@@ -757,6 +750,7 @@ function handleDocument(row) {
 
 function handleQueryMatching(row) {
   console.log('row___',row);
+
 }
 
 onMounted(() => {
