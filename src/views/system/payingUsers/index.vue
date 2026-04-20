@@ -334,7 +334,7 @@
 import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
-import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
+import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser, searchPayingRequirement } from "@/api/system/payingUser"
 import RequirementDialog from './requirementDialog.vue'
 
 const router = useRouter()
@@ -749,8 +749,30 @@ function handleDocument(row) {
 }
 
 function handleQueryMatching(row) {
-  console.log('row___',row);
-
+  const requirement = row?.requirement
+  if (!requirement) {
+    proxy.$modal.msgError("当前用户暂无需求信息")
+    return
+  }
+  const params = {
+    acceptLongDist: requirement.acceptLongDist,
+    ageMax: requirement.ageMax,
+    ageMin: requirement.ageMin,
+    cityRequire: requirement.cityRequire,
+    drinkHabit: requirement.drinkHabit,
+    education: requirement.education,
+    hasCar: requirement.hasCar,
+    hasHouse: requirement.hasHouse,
+    heightMax: requirement.heightMax,
+    heightMin: requirement.heightMin,
+    hometownRequire: requirement.hometownRequire,
+    noTattoo: requirement.noTattoo,
+    payingId: row.id,
+    smokeHabit: requirement.smokeHabit
+  }
+  searchPayingRequirement(params).then(res => {
+    proxy.$modal.msgSuccess(res?.msg || "查询匹配成功")
+  })
 }
 
 onMounted(() => {

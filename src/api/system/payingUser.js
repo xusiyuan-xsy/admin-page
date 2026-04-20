@@ -69,3 +69,12 @@ export function updatePayingRequirement(data) {
     data: data
   })
 }
+
+// 查询匹配结果
+export function searchPayingRequirement(data) {
+  return request({
+    url: '/system/payingRequirement/search',
+    method: 'post',
+    data: data
+  })
+}
