@@ -73,7 +73,7 @@ export function updatePayingRequirement(data) {
 // 查询匹配结果
 export function searchPayingRequirement(data) {
   return request({
-    url: '/system/payingRequirement/search',
+    url: '/system/payingRequirement/search?pageNum=' + data.pageNum + '&pageSize=' + data.pageSize,
     method: 'post',
     data: data
   })

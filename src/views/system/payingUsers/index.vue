@@ -305,6 +305,13 @@
       @success="getList"
     />
 
+    <!-- 查询匹配弹窗 -->
+    <query-matching-dialog
+      v-if="queryMatchingDialog.visible"
+      v-model="queryMatchingDialog.visible"
+      :searchParams="queryMatchingDialog.searchParams"
+    />
+
     <!-- 用户导入对话框 -->
     <el-dialog :title="upload.title" v-model="upload.open" width="400px" append-to-body>
       <el-upload ref="uploadRef" :limit="1" accept=".xlsx, .xls" :headers="upload.headers" :action="upload.url + '?updateSupport=' + upload.updateSupport" :disabled="upload.isUploading" :on-progress="handleFileUploadProgress" :on-success="handleFileSuccess" :on-change="handleFileChange" :on-remove="handleFileRemove" :auto-upload="false" drag>
@@ -334,8 +341,9 @@
 import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
-import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser, searchPayingRequirement } from "@/api/system/payingUser"
+import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
 import RequirementDialog from './requirementDialog.vue'
+import QueryMatchingDialog from './queryMatchingDialog.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -345,6 +353,11 @@ const requirementDialog = reactive({
   visible: false,
   payingId: undefined,
   requirement: {}
+})
+
+const queryMatchingDialog = reactive({
+  visible: false,
+  searchParams: {}
 })
 const { sys_normal_disable, sys_user_sex,sys_user_education } = proxy.useDict("sys_normal_disable", "sys_user_sex","sys_user_education")
 
@@ -754,7 +767,7 @@ function handleQueryMatching(row) {
     proxy.$modal.msgError("当前用户暂无需求信息")
     return
   }
-  const params = {
+  queryMatchingDialog.searchParams = {
     acceptLongDist: requirement.acceptLongDist,
     ageMax: requirement.ageMax,
     ageMin: requirement.ageMin,
@@ -770,9 +783,7 @@ function handleQueryMatching(row) {
     payingId: row.id,
     smokeHabit: requirement.smokeHabit
   }
-  searchPayingRequirement(params).then(res => {
-    proxy.$modal.msgSuccess(res?.msg || "查询匹配成功")
-  })
+  queryMatchingDialog.visible = true
 }
 
 onMounted(() => {
