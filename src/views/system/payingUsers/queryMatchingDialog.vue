@@ -152,8 +152,33 @@
 
     <el-divider style="margin: 12px 0" />
 
-    <!-- 匹配结果 -->
-    <el-table v-loading="loading" :data="resultList" border style="width: 100%">
+    <!-- 结果工具栏 -->
+    <div class="result-toolbar">
+      <span class="result-toolbar__count">
+        共 <b>{{ total }}</b> 条结果
+      </span>
+      <el-button-group class="result-toolbar__toggle">
+        <el-button
+          :type="viewMode === 'table' ? 'primary' : 'default'"
+          size="small"
+          @click="viewMode = 'table'"
+        >
+          <el-icon><List /></el-icon>
+          <span>表格</span>
+        </el-button>
+        <el-button
+          :type="viewMode === 'card' ? 'primary' : 'default'"
+          size="small"
+          @click="viewMode = 'card'"
+        >
+          <el-icon><Grid /></el-icon>
+          <span>卡片</span>
+        </el-button>
+      </el-button-group>
+    </div>
+
+    <!-- 表格视图 -->
+    <el-table v-if="viewMode === 'table'" v-loading="loading" :data="resultList" border style="width: 100%">
       <el-table-column label="编号" prop="id" align="center" width="70" />
       <el-table-column label="姓名" prop="name" align="center" min-width="90" :show-overflow-tooltip="true" />
       <el-table-column label="手机号码" prop="phone" align="center" width="118" />
@@ -183,6 +208,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 卡片视图 -->
+    <div v-else v-loading="loading" class="card-grid">
+      <matching-user-card
+        v-for="user in resultList"
+        :key="user.id"
+        :user="user"
+        :sys-user-sex="sys_user_sex"
+        :sys-user-education="sys_user_education"
+        :sys-normal-disable="sys_normal_disable"
+      />
+      <el-empty v-if="!loading && resultList.length === 0" description="暂无匹配结果" style="grid-column: 1 / -1" />
+    </div>
+
     <!-- 分页 -->
     <pagination
       v-show="total > 0"
@@ -202,6 +240,8 @@
 
 <script setup>
 import { searchPayingRequirement } from '@/api/system/payingUser'
+import { List, Grid } from '@element-plus/icons-vue'
+import MatchingUserCard from './MatchingUserCard.vue'
 
 const props = defineProps({
   modelValue: {
@@ -229,6 +269,7 @@ const visible = computed({
 const loading = ref(false)
 const resultList = ref([])
 const total = ref(0)
+const viewMode = ref('table')
 
 const params = ref({})
 const showSearch = ref(true)
@@ -311,5 +352,34 @@ function toggleSearch() {
   border-radius: 4px;
   padding: 16px 16px 4px;
   margin-bottom: 4px;
+}
+
+.result-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.result-toolbar__count {
+  font-size: 13px;
+  color: #606266;
+}
+.result-toolbar__count b {
+  color: #409eff;
+}
+.result-toolbar__toggle {
+  flex-shrink: 0;
+}
+.result-toolbar__toggle .el-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  min-height: 120px;
 }
 </style>
