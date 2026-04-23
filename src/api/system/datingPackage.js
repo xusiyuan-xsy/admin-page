@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// ²éÑ¯Ì×²ÍÁĞ±í
+// æŸ¥è¯¢å¥—é¤åˆ—è¡¨
 export function listDatingPackage(query) {
   return request({
     url: '/system/datingPackage/list',
@@ -9,7 +9,7 @@ export function listDatingPackage(query) {
   })
 }
 
-// ²éÑ¯Ì×²ÍÏêÇé
+// æŸ¥è¯¢å¥—é¤è¯¦æƒ…
 export function getDatingPackage(packageId) {
   return request({
     url: '/system/datingPackage/' + packageId,
@@ -17,7 +17,7 @@ export function getDatingPackage(packageId) {
   })
 }
 
-// ĞÂÔöÌ×²Í
+// æ–°å¢å¥—é¤
 export function addDatingPackage(data) {
   return request({
     url: '/system/datingPackage',
@@ -26,7 +26,7 @@ export function addDatingPackage(data) {
   })
 }
 
-// ĞŞ¸ÄÌ×²Í
+// ä¿®æ”¹å¥—é¤
 export function updateDatingPackage(data) {
   return request({
     url: '/system/datingPackage',
@@ -35,7 +35,7 @@ export function updateDatingPackage(data) {
   })
 }
 
-// É¾³ı/ÅúÁ¿É¾³ıÌ×²Í
+// åˆ é™¤/æ‰¹é‡åˆ é™¤å¥—é¤
 export function delDatingPackage(packageIds) {
   return request({
     url: '/system/datingPackage/' + packageIds,
