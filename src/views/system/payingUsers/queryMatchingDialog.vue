@@ -381,5 +381,7 @@ function toggleSearch() {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   min-height: 120px;
+  max-height: 500px;
+  overflow-y: auto;
 }
 </style>

@@ -6,40 +6,35 @@
         <!-- 无图片时显示占位图标 -->
         <el-icon v-if="!photoList.length" class="user-card__avatar-icon"><User /></el-icon>
         <!-- 单张图片直接显示 -->
-        <img
+        <el-image
           v-else-if="photoList.length === 1"
           :src="photoList[0]"
-          alt="photo"
+          :preview-src-list="photoList"
+          :initial-index="0"   
+          preview-teleported
+          fit="contain"
           class="user-card__avatar-img"
         />
         <!-- 多张图片轮播 -->
         <el-carousel
           v-else
-          height="220px"
+          height="260px"
           :autoplay="false"
           arrow="hover"
           indicator-position="outside"
           class="user-card__carousel"
         >
           <el-carousel-item v-for="(src, idx) in photoList" :key="idx">
-            <img :src="src" alt="photo" class="user-card__avatar-img" />
+            <el-image
+              :src="src"
+              :preview-src-list="photoList"
+              :initial-index="idx"
+              preview-teleported
+              fit="contain"
+              class="user-card__avatar-img"
+            />
           </el-carousel-item>
         </el-carousel>
-      </div>
-      <div class="user-card__name-row">
-        <span class="user-card__name">{{ user.name || '—' }}</span>
-        <el-tag
-          v-if="user.sex !== undefined && user.sex !== null && user.sex !== ''"
-          :type="user.sex == '0' ? 'danger' : 'primary'"
-          size="small"
-          round
-          class="user-card__sex-tag"
-        >
-          {{ getSexLabel(user.sex) }}
-        </el-tag>
-      </div>
-      <div class="user-card__status-wrap">
-        <dict-tag :options="sysNormalDisable" :value="user.status" />
       </div>
     </div>
 
@@ -197,8 +192,6 @@ function formatAcceptLongDist(val) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 14px;
   border-bottom: 1px solid #ebeef5;
 }
 .user-card__avatar {
@@ -239,26 +232,13 @@ function formatAcceptLongDist(val) {
 .user-card__avatar-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  cursor: zoom-in;
+  background: #f0f2f5;
 }
-.user-card__name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-.user-card__name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-.user-card__sex-tag {
-  font-size: 11px;
-}
-.user-card__status-wrap {
-  display: flex;
-  justify-content: center;
+:deep(.user-card__avatar-img .el-image__inner) {
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
 }
 
 /* 信息区域 */
