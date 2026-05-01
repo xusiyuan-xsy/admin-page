@@ -1,6 +1,14 @@
 import request from '@/utils/request'
 import { parseStrEmpty } from "@/utils/ruoyi";
 
+// 付费用户统计（首页看板）
+export function getPayingUsersStats() {
+  return request({
+    url: '/system/payingUsers/stats',
+    method: 'get'
+  })
+}
+
 // 查询用户列表
 export function listPayingUser(query) {
   return request({
