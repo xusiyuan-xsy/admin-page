@@ -86,47 +86,22 @@
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="是否接受异地">
-                <el-select v-model="params.acceptLongDist" placeholder="选择是否接受异地" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
+              <el-form-item label="饮酒要求">
+                <el-select v-model="params.drinkHabit" placeholder="选择饮酒要求" clearable style="width: 100%">
+                  <el-option v-for="opt in drinkHabitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="吸烟习惯">
-                <el-select v-model="params.smokeHabit" placeholder="选择吸烟习惯" clearable style="width: 100%">
-                  <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              <el-form-item label="吸烟要求">
+                <el-select v-model="params.smokeHabit" placeholder="选择吸烟要求" clearable style="width: 100%">
+                  <el-option v-for="opt in smokeHabitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
                 </el-select>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="16">
-            <el-col :span="8">
-              <el-form-item label="饮酒习惯">
-                <el-select v-model="params.drinkHabit" placeholder="选择饮酒习惯" clearable style="width: 100%">
-                  <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="是否有车">
-                <el-select v-model="params.hasCar" placeholder="选择是否有车" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="是否有房">
-                <el-select v-model="params.hasHouse" placeholder="选择是否有房" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16">
+           
             <el-col :span="8">
               <el-form-item label="是否有纹身">
                 <el-select v-model="params.noTattoo" placeholder="选择是否有纹身" clearable style="width: 100%">
@@ -136,11 +111,39 @@
               </el-form-item>
             </el-col>
             <el-col :span="8">
+              <el-form-item label="是否要求有车">
+                <el-select v-model="params.hasCar" placeholder="选择是否要求有车" clearable style="width: 100%">
+                  <el-option label="否" value="0" />
+                  <el-option label="是" value="1" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="是否要求有车">
+                <el-select v-model="params.hasHouse" placeholder="选择是否要求有房" clearable style="width: 100%">
+                  <el-option label="否" value="0" />
+                  <el-option label="是" value="1" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+           
+            <el-col :span="8">
               <el-form-item label="家乡要求">
                 <el-input v-model="params.hometownRequire" placeholder="输入家乡要求" clearable style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="8">
+              <el-form-item label="是否接受异地">
+                <el-select v-model="params.acceptLongDist" placeholder="选择是否接受异地" clearable style="width: 100%">
+                  <el-option label="否" value="0" />
+                  <el-option label="是" value="1" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            
+            <el-col :span="8" v-if="params.acceptLongDist === '0'">
               <el-form-item label="现居城市要求">
                 <el-input v-model="params.cityRequire" placeholder="输入现居城市要求" clearable style="width: 100%" />
               </el-form-item>
@@ -278,11 +281,15 @@ const queryParams = reactive({
   pageNum: 1,
   pageSize: 10
 })
-
-const habitOptions = [
-  { label: '否', value: '0' },
-  { label: '偶尔', value: '1' },
-  { label: '经常', value: '2' }
+const drinkHabitOptions = [
+  { label: '无喝酒', value: '0' },
+  { label: '可接受偶尔', value: '1' },
+  { label: '可接受经常', value: '2' }
+]
+const smokeHabitOptions = [
+  { label: '无抽烟', value: '0' },
+  { label: '可接受偶尔', value: '1' },
+  { label: '可接受经常', value: '2' }
 ]
 
 function handleOpen() {
@@ -310,6 +317,10 @@ function fetchData() {
     pageNum: queryParams.pageNum,
     pageSize: queryParams.pageSize
   }
+  if (reqData.acceptLongDist === '1') {
+    delete reqData.cityRequire
+  }
+  
   searchPayingRequirement(reqData)
     .then(res => {
       resultList.value = res.rows || []

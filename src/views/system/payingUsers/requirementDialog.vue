@@ -35,16 +35,15 @@
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="是否接受异地" prop="acceptLongDist" required>
-            <el-select v-model="form.acceptLongDist" placeholder="选择" clearable style="width: 100%">
-              <el-option label="否" value="0" />
-              <el-option label="是" value="1" />
+          <el-form-item label="吸烟习惯" prop="smokeHabit" required>
+            <el-select v-model="form.smokeHabit" placeholder="选择" clearable style="width: 100%">
+              <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="吸烟习惯" prop="smokeHabit" required>
-            <el-select v-model="form.smokeHabit" placeholder="选择" clearable style="width: 100%">
+          <el-form-item label="饮酒习惯" prop="drinkHabit" required>
+            <el-select v-model="form.drinkHabit" placeholder="选择" clearable style="width: 100%">
               <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
@@ -52,9 +51,20 @@
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="饮酒习惯" prop="drinkHabit" required>
-            <el-select v-model="form.drinkHabit" placeholder="选择" clearable style="width: 100%">
-              <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+         <el-form-item label="是否要求无纹身" prop="noTattoo" required>
+           <el-select v-model="form.noTattoo" placeholder="选择" clearable style="width: 100%">
+             <el-option label="否" value="0" />
+             <el-option label="是" value="1" />
+           </el-select>
+         </el-form-item>
+       </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="是否要求有房" prop="hasHouse" required>
+            <el-select v-model="form.hasHouse" placeholder="选择" clearable style="width: 100%">
+              <el-option label="否" value="0" />
+              <el-option label="是" value="1" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -67,24 +77,7 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="是否要求有房" prop="hasHouse" required>
-            <el-select v-model="form.hasHouse" placeholder="选择" clearable style="width: 100%">
-              <el-option label="否" value="0" />
-              <el-option label="是" value="1" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="是否要求无纹身" prop="noTattoo" required>
-            <el-select v-model="form.noTattoo" placeholder="选择" clearable style="width: 100%">
-              <el-option label="否" value="0" />
-              <el-option label="是" value="1" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+     
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="学历" prop="education" required>
@@ -101,6 +94,14 @@
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
+          <el-form-item label="是否接受异地" prop="acceptLongDist" required>
+            <el-select v-model="form.acceptLongDist" placeholder="选择" clearable style="width: 100%">
+              <el-option label="否" value="0" />
+              <el-option label="是" value="1" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12" v-if="form.acceptLongDist === '0'">
           <el-form-item label="现居城市要求" prop="cityRequire" required>
             <el-input v-model="form.cityRequire" placeholder="输入现居城市要求" maxlength="100" />
           </el-form-item>
@@ -241,6 +242,9 @@ function submitForm() {
     if (!valid) return
     submitting.value = true
     const data = { ...form.value, payingId: props.payingId }
+    if (data.acceptLongDist === '1') {
+      data.cityRequire = ''
+    }
     const api = isEdit.value ? updatePayingRequirement(data) : addPayingRequirement(data)
     api
       .then(() => {
