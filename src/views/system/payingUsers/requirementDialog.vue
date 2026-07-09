@@ -88,7 +88,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="家乡要求" prop="hometownRequire" required>
-            <el-input v-model="form.hometownRequire" placeholder="输入家乡要求" maxlength="100" />
+            <region-cascader v-model="form.hometownRequireCode" v-model:name="form.hometownRequire" :check-strictly="true" placeholder="选择家乡要求 省/市/区" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -103,7 +103,7 @@
         </el-col>
         <el-col :span="12" v-if="form.acceptLongDist === '0'">
           <el-form-item label="现居城市要求" prop="cityRequire" required>
-            <el-input v-model="form.cityRequire" placeholder="输入现居城市要求" maxlength="100" />
+            <region-cascader v-model="form.cityRequireCode" v-model:name="form.cityRequire" :check-strictly="true" placeholder="选择现居城市要求 省/市/区" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -133,6 +133,7 @@
 
 <script setup>
 import { addPayingRequirement, updatePayingRequirement } from '@/api/system/payingUser'
+import RegionCascader from '@/components/RegionCascader/index.vue'
 
 const props = defineProps({
   modelValue: {
@@ -178,7 +179,9 @@ const defaultForm = () => ({
   heightMax: undefined,
   education: undefined,
   hometownRequire: undefined,
+  hometownRequireCode: undefined,
   cityRequire: undefined,
+  cityRequireCode: undefined,
   noTattoo: undefined,
   acceptLongDist: undefined,
   smokeHabit: undefined,
@@ -227,8 +230,8 @@ const rules = {
   hasHouse: [{ required: true, message: '选择是否要求有房', trigger: 'change' }],
   noTattoo: [{ required: true, message: '选择是否要求无纹身', trigger: 'change' }],
   education: [{ required: true, message: '选择学历', trigger: 'change' }],
-  hometownRequire: [{ required: true, message: '输入家乡要求', trigger: 'blur' }],
-  cityRequire: [{ required: true, message: '输入现居城市要求', trigger: 'blur' }]
+  hometownRequire: [{ required: true, message: '选择家乡要求', trigger: 'change' }],
+  cityRequire: [{ required: true, message: '选择现居城市要求', trigger: 'change' }]
 }
 
 onMounted(() => {
@@ -244,6 +247,7 @@ function submitForm() {
     const data = { ...form.value, payingId: props.payingId }
     if (data.acceptLongDist === '1') {
       data.cityRequire = ''
+      data.cityRequireCode = ''
     }
     const api = isEdit.value ? updatePayingRequirement(data) : addPayingRequirement(data)
     api

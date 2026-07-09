@@ -131,7 +131,7 @@
            
             <el-col :span="8">
               <el-form-item label="家乡要求">
-                <el-input v-model="params.hometownRequire" placeholder="输入家乡要求" clearable style="width: 100%" />
+                <region-cascader v-model="params.hometownRequireCode" v-model:name="params.hometownRequire" :check-strictly="true" placeholder="选择家乡要求" />
               </el-form-item>
             </el-col>
             <el-col :span="8">
@@ -145,7 +145,7 @@
             
             <el-col :span="8" v-if="params.acceptLongDist === '0'">
               <el-form-item label="现居城市要求">
-                <el-input v-model="params.cityRequire" placeholder="输入现居城市要求" clearable style="width: 100%" />
+                <region-cascader v-model="params.cityRequireCode" v-model:name="params.cityRequire" :check-strictly="true" placeholder="选择现居城市要求" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -245,6 +245,7 @@
 import { searchPayingRequirement } from '@/api/system/payingUser'
 import { List, Grid } from '@element-plus/icons-vue'
 import MatchingUserCard from './MatchingUserCard.vue'
+import RegionCascader from '@/components/RegionCascader/index.vue'
 
 const props = defineProps({
   modelValue: {

@@ -14,6 +14,9 @@
               <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
+          <el-form-item label="现居城市" prop="currentCity">
+            <region-cascader v-model="searchCityCode" v-model:name="queryParams.currentCity" :check-strictly="true" placeholder="按现居省/市/区筛选" width="240px" />
+          </el-form-item>
           <el-form-item label="创建时间" style="width: 308px">
             <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>
           </el-form-item>
@@ -150,14 +153,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="现居城市" prop="currentCity" required>
-              <el-input v-model="form.currentCity" placeholder="请输入现居城市" maxlength="80" />
+              <region-cascader v-model="form.currentCityCode" v-model:name="form.currentCity" placeholder="请选择现居省/市/区" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="家乡" prop="hometown" required>
-              <el-input v-model="form.hometown" placeholder="请输入家乡" maxlength="80" />
+              <region-cascader v-model="form.hometownCode" v-model:name="form.hometown" placeholder="请选择家乡省/市/区" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -344,6 +347,7 @@ import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
 import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
 import RequirementDialog from './requirementDialog.vue'
 import QueryMatchingDialog from './queryMatchingDialog.vue'
+import RegionCascader from '@/components/RegionCascader/index.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -371,6 +375,7 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const dateRange = ref([])
+const searchCityCode = ref("")
 const initPassword = ref(undefined)
 
 const yesNoOptions = [
@@ -420,6 +425,7 @@ const data = reactive({
     name: undefined,
     phone: undefined,
     status: undefined,
+    currentCity: undefined,
     deptId: undefined
   },
   rules: {
@@ -439,10 +445,10 @@ const data = reactive({
       { required: true, message: "体重不能为空", trigger: "blur" }
     ],
     currentCity: [
-      { required: true, message: "现居城市不能为空", trigger: "blur" }
+      { required: true, message: "现居城市不能为空", trigger: "change" }
     ],
     hometown: [
-      { required: true, message: "家乡不能为空", trigger: "blur" }
+      { required: true, message: "家乡不能为空", trigger: "change" }
     ],
     hasHouse: [
       { required: true, message: "请选择是否有房", trigger: "change" }
@@ -534,6 +540,8 @@ function handleQuery() {
 /** 重置按钮操作 */
 function resetQuery() {
   dateRange.value = []
+  searchCityCode.value = ""
+  queryParams.value.currentCity = undefined
   proxy.resetForm("queryRef")
   queryParams.value.deptId = undefined
   proxy.$refs.deptTreeRef?.setCurrentKey?.(null)
@@ -660,7 +668,9 @@ function reset() {
     occupation: undefined,
     monthlyIncome: undefined,
     currentCity: undefined,
+    currentCityCode: undefined,
     hometown: undefined,
+    hometownCode: undefined,
     houseDesc: undefined,
     hasHouse: undefined,
     hasCar: undefined,
