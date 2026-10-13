@@ -6,7 +6,8 @@ import ParentView from '@/components/ParentView'
 import InnerLink from '@/layout/components/InnerLink'
 
 // 匹配views里面所有的.vue文件
-const modules = import.meta.glob('./../../views/**/*.vue')
+// The legacy indexold placeholder is empty and is not a routable Vue component.
+const modules = import.meta.glob(['./../../views/**/*.vue', '!./../../views/indexold.vue'])
 
 const usePermissionStore = defineStore(
   'permission',

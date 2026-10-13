@@ -100,6 +100,7 @@
         <template #default="scope">
           <el-switch
             v-model="scope.row.status"
+            v-hasPermi="['system:datingPackage:edit']"
             active-value="0" 
             inactive-value="1"
             @change="handleStatusChange(scope.row)"
@@ -132,7 +133,7 @@
     />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="640px" append-to-body :close-on-click-modal="false">
+    <el-dialog class="dating-package-dialog" :title="title" v-model="open" width="640px" style="max-width: 94vw" append-to-body :close-on-click-modal="false">
       <el-form :model="form" :rules="rules" ref="packageRef" label-width="140px">
         <el-row :gutter="16">
           <el-col :span="24">
@@ -162,7 +163,7 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="价格(元)" prop="price">
-              <el-input-number v-model="form.price" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.price" :min="0.01" :max="99999999.99" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -178,7 +179,7 @@
             <el-form-item label="是否限制服务天数" prop="limitExpire">
               <el-radio-group v-model="form.limitExpire">
                 <el-radio value="0">否</el-radio>
-                <el-radio value="1">是</el-radio>
+                <el-radio value="1" disabled>是</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -192,17 +193,32 @@
           <el-col :span="12">
             <el-form-item label="是否限制服务次数" prop="limitServiceTimes">
               <el-radio-group v-model="form.limitServiceTimes">
-                <el-radio value="0">否</el-radio>
+                <el-radio value="0" disabled>否</el-radio>
                 <el-radio value="1">是</el-radio>    
               </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item v-if="form.limitServiceTimes === '1'" label="服务次数" prop="serviceTimes">
-              <el-input-number v-model="form.serviceTimes" :min="0" controls-position="right" style="width: 100%"  />
+              <el-input-number v-model="form.serviceTimes" :min="1" :max="2147483647" :precision="0" controls-position="right" style="width: 100%"  />
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="服务选项模式" prop="selectionMode">
+          <el-radio-group v-model="form.selectionMode" @change="changeSelectionMode">
+            <el-radio value="SINGLE">单选</el-radio>
+            <el-radio value="MULTI">多选</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="服务选项" prop="serviceOptionCodes">
+          <el-radio-group v-if="form.selectionMode === 'SINGLE'" :model-value="form.serviceOptionCodes?.[0]" @change="value => form.serviceOptionCodes = [value]">
+            <el-radio v-for="option in serviceOptions" :key="option.code" :value="option.code" :disabled="option.status !== '0'">{{ option.name }}{{ option.status !== '0' ? '（已停用）' : '' }}</el-radio>
+          </el-radio-group>
+          <el-checkbox-group v-else v-model="form.serviceOptionCodes">
+            <el-checkbox v-for="option in serviceOptions" :key="option.code" :value="option.code" :disabled="option.status !== '0' && !form.serviceOptionCodes?.includes(option.code)">{{ option.name }}{{ option.status !== '0' ? '（已停用）' : '' }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="扣次条件"><el-tag type="info">所选服务选项全部满足</el-tag></el-form-item>
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="套餐封面" prop="coverImage">
@@ -220,8 +236,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel" :disabled="saving">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -230,6 +246,7 @@
 
 <script setup name="DatingPackage">
 import { listDatingPackage, getDatingPackage, addDatingPackage, updateDatingPackage, delDatingPackage } from '@/api/system/datingPackage'
+import { listServiceOptions } from '@/api/dating/billing'
 
 const { proxy } = getCurrentInstance()
 const { sys_normal_disable} = proxy.useDict('sys_normal_disable')
@@ -244,6 +261,8 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 const dateRange = ref([])
+const serviceOptions = ref([])
+const saving = ref(false)
 
 const columns = ref({
   packageId:   { label: '编号',       visible: true },
@@ -271,6 +290,14 @@ const data = reactive({
     status: undefined
   },
   rules: {
+    selectionMode: [{ required: true, message: '请选择单选或多选', trigger: 'change' }],
+    serviceOptionCodes: [{
+      validator: (_, value, cb) => {
+        if (!value?.length || (form.value.selectionMode === 'SINGLE' && value.length !== 1)) return cb(new Error('请选择符合模式的服务选项'))
+        if (value.some(code => !serviceOptions.value.some(o => o.code === code && o.status === '0'))) return cb(new Error('请移除不存在或已停用的选项'))
+        cb()
+      }, trigger: 'change'
+    }],
     packageName: [{ required: true, message: '套餐名称不能为空', trigger: 'blur' }],
     // packageType: [{ required: false, message: '请选择套餐类型', trigger: 'change' }],
     price: [{ required: true, message: '价格不能为空', trigger: 'blur' }],
@@ -337,8 +364,10 @@ function reset() {
     price: undefined,
     limitExpire: '0',
     serviceDuration: 0,
-    limitServiceTimes: '0',
-    serviceTimes: 0,
+    limitServiceTimes: '1',
+    serviceTimes: 1,
+    selectionMode: 'SINGLE',
+    serviceOptionCodes: [],
     coverImage: '',
     sortOrder: 0,
     description: undefined,
@@ -360,13 +389,15 @@ function cancel() {
   reset()
 }
 
-function handleAdd() {
+async function handleAdd() {
+  serviceOptions.value = (await listServiceOptions()).data
   reset()
   open.value = true
   title.value = '新增套餐'
 }
 
-function handleUpdate(row) {
+async function handleUpdate(row) {
+  serviceOptions.value = (await listServiceOptions()).data
   reset()
   const id = row?.packageId ?? ids.value[0]
   getDatingPackage(id).then(res => {
@@ -397,21 +428,31 @@ function handleStatusChange(row) {
   })
 }
 
+function changeSelectionMode(mode) {
+  if (mode === 'SINGLE' && form.value.serviceOptionCodes?.length > 1) form.value.serviceOptionCodes = []
+}
+
 function submitForm() {
+  if (saving.value) return
+  if (form.value.limitExpire !== '0' || form.value.limitServiceTimes !== '1') {
+    proxy.$modal.msgWarning('本阶段仅支持不限时的固定次数套餐，请调整配置')
+    return
+  }
   proxy.$refs['packageRef'].validate(valid => {
     if (!valid) return
+    saving.value = true
     if (form.value.packageId != null) {
       updateDatingPackage(form.value).then(() => {
         proxy.$modal.msgSuccess('修改成功')
         open.value = false
         getList()
-      })
+      }).finally(() => { saving.value = false })
     } else {
       addDatingPackage(form.value).then(() => {
         proxy.$modal.msgSuccess('新增成功')
         open.value = false
         getList()
-      })
+      }).finally(() => { saving.value = false })
     }
   })
 }
@@ -420,3 +461,16 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style>
+@media (max-width: 600px) {
+  .dating-package-dialog .el-col-12 { max-width: 100%; flex-basis: 100%; }
+  .dating-package-dialog .el-form-item { display: block; }
+  .dating-package-dialog .el-form-item__label { width: auto !important; justify-content: flex-start; }
+  .dating-package-dialog .el-form-item__content { margin-left: 0 !important; }
+  .dating-package-dialog .el-radio,
+  .dating-package-dialog .el-checkbox { height: auto; min-height: 32px; margin-right: 16px; white-space: normal; }
+  .dating-package-dialog .el-radio__label,
+  .dating-package-dialog .el-checkbox__label { overflow-wrap: anywhere; }
+}
+</style>

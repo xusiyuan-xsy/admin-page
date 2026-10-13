@@ -15,7 +15,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="现居城市" prop="currentCity">
-            <region-cascader v-model="searchCityCode" v-model:name="queryParams.currentCity" :check-strictly="true" placeholder="按现居省/市/区筛选" width="240px" />
+            <region-cascader v-model="searchCityCode" v-model:name="queryParams.currentCity" :max-level="2" placeholder="按现居省/市筛选" width="240px" />
           </el-form-item>
           <el-form-item label="创建时间" style="width: 308px">
             <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>

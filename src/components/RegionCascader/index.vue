@@ -26,6 +26,7 @@ const props = defineProps({
   placeholder: { type: String, default: '请选择省/市/区' },
   clearable: { type: Boolean, default: true },
   width: { type: String, default: '100%' },
+  maxLevel: { type: Number, default: 3 },
   // 允许选择任意层级（省/市），用于筛选与择偶要求；默认必须选到区（叶子）
   checkStrictly: { type: Boolean, default: false }
 })
@@ -50,7 +51,7 @@ const cascaderProps = {
       const list = (res.data || []).map(item => ({
         code: item.code,
         name: item.name,
-        leaf: item.leaf === true || item.level === 3
+        leaf: item.leaf === true || item.level >= props.maxLevel
       }))
       resolve(list)
     }).catch(() => resolve([]))
