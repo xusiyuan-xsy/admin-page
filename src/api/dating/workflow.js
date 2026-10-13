@@ -1,0 +1,15 @@
+import request from '@/utils/request'
+
+export const listAssignments = params => request({ url: '/dating/assignments', method: 'get', params })
+export const listStaff = keyword => request({ url: '/dating/staff', method: 'get', params: { keyword } })
+export const assignmentHistory = id => request({ url: `/dating/users/${id}/assignments`, method: 'get' })
+export const assignCustomer = (id, data) => request({ url: `/dating/users/${id}/assign`, method: 'post', data })
+export const listMatches = params => request({ url: '/dating/matches', method: 'get', params })
+export const getMatch = id => request({ url: `/dating/matches/${id}`, method: 'get' })
+export const recommend = data => request({ url: '/dating/recommendations', method: 'post', data })
+export const recordIntention = (id, data) => request({ url: `/dating/recommendations/${id}/intentions`, method: 'post', data })
+export const recordEvent = (id, data) => request({ url: `/dating/matches/${id}/service-events`, method: 'post', data })
+export const schedule = (id, data) => request({ url: `/dating/matches/${id}/appointments`, method: 'post', data })
+export const reschedule = (id, data) => request({ url: `/dating/appointments/${id}`, method: 'put', data })
+export const appointmentAction = (id, data) => request({ url: `/dating/appointments/${id}/actions`, method: 'post', data })
+export const retryDeduction = id => request({ url: `/dating/deduction-tasks/${id}/retry`, method: 'post' })
