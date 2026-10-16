@@ -12,4 +12,4 @@ export const recordEvent = (id, data) => request({ url: `/dating/matches/${id}/s
 export const schedule = (id, data) => request({ url: `/dating/matches/${id}/appointments`, method: 'post', data })
 export const reschedule = (id, data) => request({ url: `/dating/appointments/${id}`, method: 'put', data })
 export const appointmentAction = (id, data) => request({ url: `/dating/appointments/${id}/actions`, method: 'post', data })
-export const retryDeduction = id => request({ url: `/dating/deduction-tasks/${id}/retry`, method: 'post' })
+export const retryDeduction = (id, data) => request({ url: `/dating/deduction-tasks/${id}/retry`, method: 'post', data })

@@ -1,5 +1,7 @@
 <template>
   <div class="app-container paying-stats-dashboard" v-loading="loading">
+    <el-alert v-if="loadError" :title="loadError" type="warning" :closable="false" show-icon />
+    <template v-if="loaded">
     <el-row :gutter="16" class="stat-row">
       <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
         <el-card shadow="hover" class="stat-card">
@@ -9,14 +11,20 @@
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="5">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-label">未匹配用户</div>
-          <div class="stat-value text-success">{{ stats.status0Count ?? 0 }}</div>
+          <div class="stat-label">服务中</div>
+          <div class="stat-value text-success">{{ stats.servingCount ?? 0 }}</div>
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="5">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-label">匹配成功用户</div>
-          <div class="stat-value text-danger">{{ stats.status1Count ?? 0 }}</div>
+          <div class="stat-label">成功人数</div>
+          <div class="stat-value text-danger">{{ stats.successPeopleCount ?? 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="5">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">成功案例</div>
+          <div class="stat-value">{{ stats.successCaseCount ?? 0 }}</div>
         </el-card>
       </el-col>
       <!-- <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="5">
@@ -37,7 +45,7 @@
       <el-col :xs="24" :lg="12">
         <el-card shadow="never" class="chart-card">
           <template #header>
-            <span>用户状态分布</span>
+            <span>客户服务状态</span>
           </template>
           <div ref="statusChartRef" class="chart-box" />
         </el-card>
@@ -63,18 +71,28 @@
         </el-card>
       </el-col>
     </el-row>
+    </template>
   </div>
 </template>
 
 <script setup name="Index">
 import { getPayingUsersStats } from '@/api/system/payingUser'
 import * as echarts from 'echarts'
+import { checkPermi } from '@/utils/permission'
 
 const loading = ref(true)
+const loaded = ref(false)
+const loadError = ref('')
 const stats = ref({
   delFlag0Count: 0,
   status0Count: 0,
   status1Count: 0,
+  servingCount: 0,
+  notStartedCount: 0,
+  notRenewedCount: 0,
+  successPeopleCount: 0,
+  successCaseCount: 0,
+  successClosedCount: 0,
   maleCount: 0,
   femaleCount: 0,
   birthYearStats: []
@@ -107,8 +125,6 @@ function renderCharts() {
   disposeCharts()
   if (!statusChartRef.value || !sexChartRef.value || !birthYearChartRef.value) return
 
-  const s0 = stats.value.status0Count ?? 0
-  const s1 = stats.value.status1Count ?? 0
   const male = stats.value.maleCount ?? 0
   const female = stats.value.femaleCount ?? 0
 
@@ -126,8 +142,10 @@ function renderCharts() {
         itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
         label: { formatter: '{b}({c})' },
         data: [
-          { value: s0, name: '未匹配用户' },
-          { value: s1, name: '匹配成功用户' }
+          { value: stats.value.notStartedCount ?? 0, name: '未开通' },
+          { value: stats.value.servingCount ?? 0, name: '服务中' },
+          { value: stats.value.notRenewedCount ?? 0, name: '未续单' },
+          { value: stats.value.successClosedCount ?? 0, name: '成功结案' }
         ]
       }
     ]
@@ -196,6 +214,11 @@ function renderCharts() {
 }
 
 function loadStats() {
+  if (!checkPermi(['system:payingUsers:list'])) {
+    loading.value = false
+    loadError.value = '暂无客户统计查看权限'
+    return
+  }
   loading.value = true
   getPayingUsersStats()
     .then((res) => {
@@ -204,14 +227,26 @@ function loadStats() {
         delFlag0Count: data.delFlag0Count ?? 0,
         status0Count: data.status0Count ?? 0,
         status1Count: data.status1Count ?? 0,
+        notStartedCount: data.notStartedCount ?? 0,
+        servingCount: data.servingCount ?? 0,
+        notRenewedCount: data.notRenewedCount ?? 0,
+        successPeopleCount: data.successPeopleCount ?? 0,
+        successCaseCount: data.successCaseCount ?? 0,
+        successClosedCount: data.successClosedCount ?? 0,
         maleCount: data.maleCount ?? 0,
         femaleCount: data.femaleCount ?? 0,
         birthYearStats: Array.isArray(data.birthYearStats) ? data.birthYearStats : []
       }
+      loaded.value = true
+    })
+    .catch(() => {
+      loaded.value = false
+      loadError.value = '统计数据加载失败'
+      disposeCharts()
     })
     .finally(() => {
       loading.value = false
-      nextTick(() => renderCharts())
+      if (loaded.value) nextTick(() => renderCharts())
     })
 }
 

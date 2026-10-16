@@ -95,6 +95,20 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/dating/recovery',
+    component: Layout,
+    hidden: true,
+    permissions: ['dating:match:query'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/dating/recovery/index'),
+        name: 'DatingRecovery',
+        meta: { title: '扣次异常工作台', activeMenu: '/dating/matches', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/system/user-auth',
     component: Layout,
     hidden: true,

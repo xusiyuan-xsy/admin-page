@@ -3,46 +3,47 @@
     :title="isEdit ? '修改需求' : '新增需求'"
     v-model="visible"
     width="800px"
+    style="max-width: calc(100vw - 24px)"
     append-to-body
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px" class="requirement-form">
       <el-row :gutter="16">
-        <el-form-item label="接受年龄范围" required style="margin-bottom: 20px;margin-left: 6px;">
-          <div style="display: flex; align-items: flex-start; gap: 10px">
+        <el-form-item label="出生年份范围" style="margin-bottom: 20px;margin-left: 6px;">
+          <div style="display: flex; align-items: flex-start; gap: 10px; width: 100%; min-width: 0">
             <el-form-item prop="ageMin" style="margin-bottom: 0; flex: 1">
-              <el-input-number v-model="form.ageMin" :min="1980" controls-position="right" placeholder="例如1999" style="width: 100%" @change="formRef?.validateField('ageMax')" />
+              <el-input-number v-model="form.ageMin" :min="1900" :max="new Date().getFullYear()" controls-position="right" placeholder="例如1999" style="width: 100%" @change="formRef?.validateField('ageMax')" />
             </el-form-item>
             <span style="line-height: 32px; color: #606266">~</span>
             <el-form-item prop="ageMax" style="margin-bottom: 0; flex: 1">
-              <el-input-number v-model="form.ageMax" :min="1980" controls-position="right" placeholder="例如2004" style="width: 100%" @change="formRef?.validateField('ageMin')" />
+              <el-input-number v-model="form.ageMax" :min="1900" :max="new Date().getFullYear()" controls-position="right" placeholder="例如2004" style="width: 100%" @change="formRef?.validateField('ageMin')" />
             </el-form-item>
           </div>
         </el-form-item>
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="最低身高(cm)" prop="heightMin" required>
+          <el-form-item label="最低身高(cm)" prop="heightMin">
             <el-input-number v-model="form.heightMin" :min="100" :max="250" controls-position="right" style="width: 100%" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="最高身高(cm)" prop="heightMax" required>
+          <el-form-item label="最高身高(cm)" prop="heightMax">
             <el-input-number v-model="form.heightMax" :min="100" :max="250" controls-position="right" style="width: 100%" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="吸烟习惯" prop="smokeHabit" required>
+          <el-form-item label="吸烟要求" prop="smokeHabit">
             <el-select v-model="form.smokeHabit" placeholder="选择" clearable style="width: 100%">
               <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="饮酒习惯" prop="drinkHabit" required>
+          <el-form-item label="饮酒要求" prop="drinkHabit">
             <el-select v-model="form.drinkHabit" placeholder="选择" clearable style="width: 100%">
               <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
@@ -51,28 +52,28 @@
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-         <el-form-item label="是否要求无纹身" prop="noTattoo" required>
+         <el-form-item label="是否要求无纹身" prop="noTattoo">
            <el-select v-model="form.noTattoo" placeholder="选择" clearable style="width: 100%">
-             <el-option label="否" value="0" />
-             <el-option label="是" value="1" />
+             <el-option label="不限" value="0" />
+             <el-option label="要求无纹身" value="1" />
            </el-select>
          </el-form-item>
        </el-col>
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="是否要求有房" prop="hasHouse" required>
+          <el-form-item label="是否要求有房" prop="hasHouse">
             <el-select v-model="form.hasHouse" placeholder="选择" clearable style="width: 100%">
-              <el-option label="否" value="0" />
-              <el-option label="是" value="1" />
+              <el-option label="不限" value="0" />
+              <el-option label="要求有房" value="1" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="是否要求有车" prop="hasCar" required>
+          <el-form-item label="是否要求有车" prop="hasCar">
             <el-select v-model="form.hasCar" placeholder="选择" clearable style="width: 100%">
-              <el-option label="否" value="0" />
-              <el-option label="是" value="1" />
+              <el-option label="不限" value="0" />
+              <el-option label="要求有车" value="1" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -80,22 +81,23 @@
      
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="学历" prop="education" required>
+          <el-form-item label="学历" prop="education">
             <el-select v-model="form.education" placeholder="选择" clearable style="width: 100%">
-              <el-option v-for="(opt,index) in sys_user_education" :key="opt.value" :label="index === 0 ? opt.label+'学历需求' : opt.label+'及以上'" :value="opt.value" />
+              <el-option v-for="opt in sys_user_education" :key="opt.value" :label="opt.value === '0' ? '不限' : opt.label+'及以上'" :value="opt.value" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="家乡要求" prop="hometownRequire" required>
+          <el-form-item label="家乡要求" prop="hometownRequire">
             <region-cascader v-model="form.hometownRequireCode" v-model:name="form.hometownRequire" :check-strictly="true" placeholder="选择家乡要求 省/市/区" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="是否接受异地" prop="acceptLongDist" required>
+          <el-form-item label="是否接受异地" prop="acceptLongDist">
             <el-select v-model="form.acceptLongDist" placeholder="选择" clearable style="width: 100%">
+              <el-option label="不限" value="" />
               <el-option label="否" value="0" />
               <el-option label="是" value="1" />
             </el-select>
@@ -165,9 +167,10 @@ const formRef = ref(null)
 const { sys_user_education } = proxy.useDict("sys_user_education")
 
 const habitOptions = [
+  { label: '不限', value: '' },
   { label: '无', value: '0' },
-  { label: '偶尔', value: '1' },
-  { label: '经常', value: '2' }
+  { label: '最多偶尔', value: '1' },
+  { label: '可接受经常', value: '2' }
 ]
 
 const defaultForm = () => ({
@@ -196,11 +199,10 @@ const form = ref(defaultForm())
 
 const rules = {
   ageMin: [
-    { required: true, message: '输入最小出生年份', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
-        if (value && form.value.ageMax && value >= form.value.ageMax) {
-          callback(new Error('接受年龄范围不能大于或等于最大出生年份'))
+        if (value != null && form.value.ageMax != null && value > form.value.ageMax) {
+          callback(new Error('最小出生年份不能大于最大出生年份'))
         } else {
           callback()
         }
@@ -209,11 +211,10 @@ const rules = {
     }
   ],
   ageMax: [
-    { required: true, message: '输入最大出生年份', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
-        if (value && form.value.ageMin && value <= form.value.ageMin) {
-          callback(new Error('接受年龄范围不能小于或等于最小出生年份'))
+        if (value != null && form.value.ageMin != null && value < form.value.ageMin) {
+          callback(new Error('最大出生年份不能小于最小出生年份'))
         } else {
           callback()
         }
@@ -221,16 +222,13 @@ const rules = {
       trigger: 'change'
     }
   ],
-  heightMin: [{ required: true, message: '输入最低身高(cm)', trigger: 'blur' }],
-  heightMax: [{ required: true, message: '输入最高身高(cm)', trigger: 'blur' }],
-  acceptLongDist: [{ required: true, message: '选择是否接受异地', trigger: 'change' }],
-  smokeHabit: [{ required: true, message: '选择吸烟习惯', trigger: 'change' }],
-  drinkHabit: [{ required: true, message: '选择饮酒习惯', trigger: 'change' }],
-  hasCar: [{ required: true, message: '选择是否要求有车', trigger: 'change' }],
-  hasHouse: [{ required: true, message: '选择是否要求有房', trigger: 'change' }],
-  noTattoo: [{ required: true, message: '选择是否要求无纹身', trigger: 'change' }],
-  education: [{ required: true, message: '选择学历', trigger: 'change' }],
-  hometownRequire: [{ required: true, message: '选择家乡要求', trigger: 'change' }],
+  heightMax: [{
+    validator: (rule, value, callback) => {
+      callback(value != null && form.value.heightMin != null && value < form.value.heightMin
+        ? new Error('最高身高不能小于最低身高') : undefined)
+    },
+    trigger: 'change'
+  }],
   cityRequire: [{ required: true, message: '选择现居城市要求', trigger: 'change' }]
 }
 
@@ -245,7 +243,7 @@ function submitForm() {
     if (!valid) return
     submitting.value = true
     const data = { ...form.value, payingId: props.payingId }
-    if (data.acceptLongDist === '1') {
+    if (data.acceptLongDist !== '0') {
       data.cityRequire = ''
       data.cityRequireCode = ''
     }
@@ -267,3 +265,13 @@ function handleClose() {
   visible.value = false
 }
 </script>
+
+<style scoped>
+.requirement-form :deep(.el-form-item__content) { min-width: 0; }
+@media (max-width: 600px) {
+  .requirement-form :deep(.el-col-12) { max-width: 100%; flex-basis: 100%; }
+  .requirement-form :deep(.el-form-item) { display: block; width: 100%; }
+  .requirement-form :deep(.el-form-item__content) { margin-left: 0 !important; }
+  .requirement-form :deep(.el-form-item__label) { width: auto !important; }
+}
+</style>

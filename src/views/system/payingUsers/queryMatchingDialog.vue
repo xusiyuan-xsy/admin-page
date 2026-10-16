@@ -3,9 +3,9 @@
     title="查询匹配"
     v-model="visible"
     width="1100px"
+    style="max-width: calc(100vw - 24px)"
     append-to-body
     :close-on-click-modal="false"
-    @open="handleOpen"
     @close="handleClose"
   >
     <div class="search-toolbar">
@@ -26,12 +26,12 @@
         <el-form :model="params" :inline="false" label-width="120px" size="small" class="search-form">
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="查询范围">
+              <el-form-item label="出生年份范围">
                 <div style="display: flex; align-items: center; gap: 8px; width: 100%">
                   <el-input-number
                     v-model="params.ageMin"
-                    :min="1940"
-                    :max="2030"
+                    :min="1900"
+                    :max="new Date().getFullYear()"
                     controls-position="right"
                     placeholder="最小出生年份"
                     style="flex: 1"
@@ -39,8 +39,8 @@
                   <span style="color: #606266">~</span>
                   <el-input-number
                     v-model="params.ageMax"
-                    :min="1940"
-                    :max="2030"
+                    :min="1900"
+                    :max="new Date().getFullYear()"
                     controls-position="right"
                     placeholder="最大出生年份"
                     style="flex: 1"
@@ -79,7 +79,7 @@
                   <el-option
                     v-for="(opt, index) in sys_user_education"
                     :key="opt.value"
-                    :label="index === 0 ? opt.label + '学历' : opt.label + '学历'"
+                    :label="opt.value === '0' ? '不限' : opt.label + '及以上'"
                     :value="opt.value"
                   />
                 </el-select>
@@ -103,26 +103,26 @@
           <el-row :gutter="16">
            
             <el-col :span="8">
-              <el-form-item label="是否有纹身">
-                <el-select v-model="params.noTattoo" placeholder="选择是否有纹身" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
+              <el-form-item label="是否要求无纹身">
+                <el-select v-model="params.noTattoo" placeholder="选择纹身要求" clearable style="width: 100%">
+                  <el-option label="不限" value="0" />
+                  <el-option label="要求无纹身" value="1" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="是否要求有车">
                 <el-select v-model="params.hasCar" placeholder="选择是否要求有车" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
+                  <el-option label="不限" value="0" />
+                  <el-option label="要求有车" value="1" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="是否要求有车">
+              <el-form-item label="是否要求有房">
                 <el-select v-model="params.hasHouse" placeholder="选择是否要求有房" clearable style="width: 100%">
-                  <el-option label="否" value="0" />
-                  <el-option label="是" value="1" />
+                  <el-option label="不限" value="0" />
+                  <el-option label="要求有房" value="1" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -137,6 +137,7 @@
             <el-col :span="8">
               <el-form-item label="是否接受异地">
                 <el-select v-model="params.acceptLongDist" placeholder="选择是否接受异地" clearable style="width: 100%">
+                  <el-option label="不限" value="" />
                   <el-option label="否" value="0" />
                   <el-option label="是" value="1" />
                 </el-select>
@@ -204,7 +205,7 @@
           <span>{{ scope.row.monthlyIncome != null && scope.row.monthlyIncome !== '' ? scope.row.monthlyIncome : '—' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" align="center" width="80">
+      <el-table-column label="档案状态" prop="status" align="center" width="88">
         <template #default="scope">
           <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
         </template>
@@ -257,9 +258,6 @@ const props = defineProps({
     default: () => ({})
   }
 })
-onMounted(() => {
-  handleOpen()
-})
 const emit = defineEmits(['update:modelValue'])
 
 const { proxy } = getCurrentInstance()
@@ -283,15 +281,21 @@ const queryParams = reactive({
   pageSize: 10
 })
 const drinkHabitOptions = [
+  { label: '不限', value: '' },
   { label: '无喝酒', value: '0' },
-  { label: '可接受偶尔', value: '1' },
+  { label: '最多偶尔', value: '1' },
   { label: '可接受经常', value: '2' }
 ]
 const smokeHabitOptions = [
+  { label: '不限', value: '' },
   { label: '无抽烟', value: '0' },
-  { label: '可接受偶尔', value: '1' },
+  { label: '最多偶尔', value: '1' },
   { label: '可接受经常', value: '2' }
 ]
+
+watch(() => props.modelValue, open => {
+  if (open) handleOpen()
+}, { immediate: true })
 
 function handleOpen() {
   params.value = { ...props.searchParams }
@@ -318,7 +322,7 @@ function fetchData() {
     pageNum: queryParams.pageNum,
     pageSize: queryParams.pageSize
   }
-  if (reqData.acceptLongDist === '1') {
+  if (reqData.acceptLongDist !== '0') {
     delete reqData.cityRequire
   }
   
@@ -326,6 +330,10 @@ function fetchData() {
     .then(res => {
       resultList.value = res.rows || []
       total.value = res.total || 0
+    })
+    .catch(() => {
+      resultList.value = []
+      total.value = 0
     })
     .finally(() => {
       loading.value = false
@@ -395,5 +403,13 @@ function toggleSearch() {
   min-height: 120px;
   max-height: 500px;
   overflow-y: auto;
+}
+.search-form :deep(.el-input-number) { min-width: 0; width: 100%; }
+@media (max-width: 600px) {
+  .search-form :deep(.el-col) { max-width: 100%; flex-basis: 100%; }
+  .search-form :deep(.el-form-item) { display: block; }
+  .search-form :deep(.el-form-item__content) { margin-left: 0 !important; }
+  .search-form :deep(.el-form-item__label) { width: auto !important; }
+  .card-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

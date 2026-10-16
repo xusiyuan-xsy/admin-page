@@ -9,7 +9,7 @@
           <el-form-item label="手机号码" prop="phone">
             <el-input v-model="queryParams.phone" placeholder="请输入手机号码" clearable style="width: 240px" @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="状态" prop="status">
+          <el-form-item label="档案状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="用户状态" clearable style="width: 240px">
               <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
@@ -28,19 +28,19 @@
 
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:payingUsers:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:payingUsers:edit']">修改</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:payingUsers:remove']">删除</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['system:user:import']">导入</el-button>
+            <el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['system:payingUsers:import']">导入</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:user:export']">导出</el-button>
+            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:payingUsers:export']">导出</el-button>
           </el-col>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="xxxxxxxx"></right-toolbar>
         </el-row>
@@ -68,9 +68,14 @@
               <span>{{ scope.row.monthlyIncome != null && scope.row.monthlyIncome !== '' ? scope.row.monthlyIncome : '—' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" key="status" v-if="columns.status.visible" width="88">
+          <el-table-column label="档案状态" align="center" key="status" v-if="columns.status.visible" width="88">
             <template #default="scope">
               <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+            </template>
+          </el-table-column>
+          <el-table-column label="服务状态" align="center" min-width="100">
+            <template #default="{ row }">
+              {{ { NOT_STARTED: '未开通', SERVING: '服务中', NOT_RENEWED: '未续单', SUCCESS_CLOSED: '成功结案' }[row.serviceStatus] || '未知' }}
             </template>
           </el-table-column>
           <el-table-column label="创建时间" align="center" key="createTime" prop="createTime" v-if="columns.createTime.visible" width="160">
@@ -81,16 +86,16 @@
           <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-tooltip content="修改" placement="top">
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payingUsers:edit']"></el-button>
+                <el-button link type="primary" icon="Edit" aria-label="修改" @click="handleUpdate(scope.row)" v-hasPermi="['system:payingUsers:edit']"></el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
                 <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payingUsers:remove']"></el-button>
               </el-tooltip>
               <el-tooltip :content="scope.row.requirement ? '修改需求' : '新增需求'" placement="top">
-                <el-button link type="primary" icon="document" @click="handleDocument(scope.row)" v-hasPermi="['system:payingUsers:document']"></el-button>
+                <el-button v-if="checkPermi([scope.row.requirement ? 'system:payingRequirement:edit' : 'system:payingRequirement:add'])" :aria-label="scope.row.requirement ? '修改需求' : '新增需求'" link type="primary" icon="document" @click="handleDocument(scope.row)"></el-button>
               </el-tooltip>
               <el-tooltip content="查询匹配" placement="top">
-                <el-button link type="primary" icon="search" v-if="scope.row.requirement" @click="handleQueryMatching(scope.row)" v-hasPermi="['system:payingUsers:queryMatching']"></el-button>
+                <el-button link type="primary" icon="search" aria-label="查询匹配" v-if="scope.row.requirement" @click="handleQueryMatching(scope.row)" v-hasPermi="['system:payingRequirement:search']"></el-button>
               </el-tooltip>
               <!-- <el-tooltip content="重置密码" placement="top">
                 <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['system:user:resetPwd']"></el-button>
@@ -104,8 +109,8 @@
     </div>
 
     <!-- 添加或修改用户配置对话框 -->
-    <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-      <el-form :model="form" :rules="rules" ref="payingUserRef" label-width="108px">
+    <el-dialog :title="title" v-model="open" width="min(960px, calc(100vw - 24px))" append-to-body>
+      <el-form class="archive-editor-form" :model="form" :rules="rules" ref="payingUserRef" label-width="108px">
         <!-- 必填项 -->
         <el-row :gutter="16">
           <el-col :span="12">
@@ -250,7 +255,7 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="状态" prop="status">
+            <el-form-item label="档案状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
               </el-radio-group>
@@ -279,7 +284,12 @@
         <el-row :gutter="16">
           <el-col :span="24">
             <el-form-item label="照片" prop="photos">
-              <image-upload v-model="form.photos" action="/oss/upload" name="file" :limit="9" />
+              <image-upload v-if="open && form.id" :key="form.id" v-model="form.photos"
+                :private-archive-id="form.id" :action="`/dating/archives/${form.id}/photos`"
+                :is-show-tip="false" :drag="false" name="file" :limit="9" @busy="photosBusy = $event" />
+              <span v-else class="text-muted">档案尚未保存</span>
+              <el-alert v-if="form.legacyPhotoCount" :title="`${form.legacyPhotoCount}张历史公开照片待安全迁移`"
+                type="warning" :closable="false" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -293,7 +303,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" :disabled="photosBusy" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -346,8 +356,11 @@ import useAppStore from '@/store/modules/app'
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
 import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
 import RequirementDialog from './requirementDialog.vue'
+import { checkPermi } from '@/utils/permission'
 import QueryMatchingDialog from './queryMatchingDialog.vue'
 import RegionCascader from '@/components/RegionCascader/index.vue'
+import { listRegion } from '@/api/system/region'
+import { hydrateArchiveRegions } from '@/utils/archiveRegions'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -367,6 +380,8 @@ const { sys_normal_disable, sys_user_sex,sys_user_education } = proxy.useDict("s
 
 const userList = ref([])
 const open = ref(false)
+const photosBusy = ref(false)
+watch(open, () => { photosBusy.value = false })
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -413,7 +428,7 @@ const columns = ref({
   occupation: { label: "职业", visible: true },
   currentCity: { label: "现居城市", visible: true },
   monthlyIncome: { label: "月收入", visible: true },
-  status: { label: "状态", visible: true },
+  status: { label: "档案状态", visible: true },
   createTime: { label: "创建时间", visible: true }
 })
 
@@ -709,15 +724,24 @@ function handleAdd() {
 function handleUpdate(row) {
   reset()
   const id = row?.id ?? ids.value[0]
-  getPayingUser(id).then(response => {
-    form.value = response.data
+  getPayingUser(id).then(async response => {
+    let archive = response.data
+    try {
+      archive = await hydrateArchiveRegions(archive, parent => listRegion(parent).then(res => res.data || []))
+      if ((archive.currentCity && !archive.currentCityCode) || (archive.hometown && !archive.hometownCode)) {
+        proxy.$modal.msgWarning("部分地区无法回显，请核对并重新选择")
+      }
+    } catch {
+      proxy.$modal.msgWarning("地区加载失败，请稍后重试或重新选择")
+    }
+    form.value = archive
     form.value.password = ""
     open.value = true
     title.value = "修改用户"
   })
 }
 
-/** ImageUpload 对外多为逗号分隔字符串，接口 photos 需传 URL 字符串数组 */
+/** ImageUpload 对外为逗号分隔字符串，接口接收受控照片引用数组。 */
 function photosToSubmitArray(photos) {
   if (photos == null || photos === "") return []
   if (Array.isArray(photos)) {
@@ -744,6 +768,7 @@ function buildPayingUserSubmitData() {
 
 /** 提交按钮 */
 function submitForm() {
+  if (photosBusy.value) return
   proxy.$refs["payingUserRef"].validate(valid => {
     if (valid) {
       const data = buildPayingUserSubmitData()
@@ -803,3 +828,12 @@ onMounted(() => {
   })
 })
 </script>
+
+<style scoped>
+@media (max-width: 600px) {
+  .archive-editor-form :deep(.el-col-12) {
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+}
+</style>

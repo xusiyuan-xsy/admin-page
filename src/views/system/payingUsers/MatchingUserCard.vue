@@ -115,6 +115,7 @@
 <script setup>
 import { computed } from 'vue'
 import { User } from '@element-plus/icons-vue'
+import { useArchivePhotos } from '@/composables/useArchivePhotos'
 
 const props = defineProps({
   user: {
@@ -135,14 +136,8 @@ const props = defineProps({
   }
 })
 
-// 兼容 photos 为数组或逗号分隔字符串两种格式
-const photoList = computed(() => {
-  const p = props.user.photos
-  if (!p) return []
-  if (Array.isArray(p)) return p.filter(Boolean)
-  if (typeof p === 'string') return p.split(',').map(s => s.trim()).filter(Boolean)
-  return []
-})
+const { photos } = useArchivePhotos(() => ({ value: props.user.photos, archiveId: props.user.id }))
+const photoList = computed(() => photos.value.map(photo => photo.url))
 
 function getSexLabel(val) {
   const item = props.sysUserSex.find(o => o.value === String(val))

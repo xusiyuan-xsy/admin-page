@@ -23,6 +23,14 @@ let order = null
 let savedPackage
 let savedOption
 let opened = 0
+let integrityFails = false
+const coverImage = `${baseURL}/test-cover.png`
+let coverBytes
+const entitlement = () => ({
+  entitlementId: 22, orderId: 11, orderNo: order.orderNo, userId: 7, userName: '测试客户',
+  packageName: pkg.packageName, totalTimes: 3, usedTimes: 0, remainingTimes: 3,
+  status: 'ACTIVE', ruleSnapshot: snapshot, createBy: 'admin', createTime: '2026-10-13 10:10:00'
+})
 const menus = [{
   path: '/dating', component: 'Layout', name: 'Dating', meta: { title: '婚恋服务', icon: 'peoples' },
   children: [
@@ -39,6 +47,10 @@ async function fixtures(route) {
   const reply = data => route.fulfill({ json: { code: 200, msg: '操作成功', ...data } })
   if (path === '/getInfo') return reply({ user: { userId: 1, userName: 'admin', nickName: '管理员' }, roles: ['admin'], permissions: ['*:*:*'] })
   if (path === '/getRouters') return reply({ data: menus })
+  if (path === '/oss/upload') {
+    assert.equal(req.headers().authorization, 'Bearer mock-ui-test-only')
+    return reply({ url: coverImage, fileName: 'cover.png' })
+  }
   if (path === '/dating/service-options') {
     if (req.method() === 'POST') savedOption = req.postDataJSON()
     return reply({ data: serviceOptions })
@@ -62,6 +74,15 @@ async function fixtures(route) {
     return reply({ data: order })
   }
   if (path === '/dating/orders/11') return reply({ data: order })
+  if (path === '/dating/entitlements/22') return reply({
+    data: { entitlement: entitlement(), issues: [], ledger: [
+      { ledgerId: 1, entryType: 'OPEN', delta: 3, balanceBefore: 0, balanceAfter: 3, createBy: 'admin', createTime: '2026-10-13 10:10:00' }
+    ] }
+  })
+  if (path === '/dating/integrity-issues') {
+    if (integrityFails) return route.fulfill({ json: { code: 500, msg: '测试检查失败' } })
+    return reply({ rows: [{ userId: 7, orderId: 11, entitlementId: 22, code: 'BALANCE_LEDGER' }], total: 1 })
+  }
   if (path === '/dating/entitlements') return reply({
     rows: opened ? [{ entitlementId: 22, orderId: 11, orderNo: order.orderNo, userId: 7, userName: '测试客户', packageName: pkg.packageName, totalTimes: 3, usedTimes: 0, remainingTimes: 3, status: 'ACTIVE', ruleSnapshot: snapshot, createBy: 'admin', createTime: '2026-10-13 10:10:00' }] : [], total: opened ? 1 : 0
   })
@@ -95,6 +116,15 @@ try {
   await context.route('**/dev-api/**', fixtures)
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
+  const coverData = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 80; canvas.height = 60
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#258c6a'; ctx.fillRect(0, 0, 80, 60)
+    return canvas.toDataURL('image/png')
+  })
+  coverBytes = Buffer.from(coverData.split(',')[1], 'base64')
+  await context.route(coverImage, route => route.fulfill({ body: coverBytes, contentType: 'image/png' }))
   await page.goto(`${baseURL}/dating/orders`)
   await page.getByRole('button', { name: '创建订单', exact: true }).click()
   let dialog = page.getByRole('dialog', { name: '创建订单', exact: true })
@@ -123,6 +153,19 @@ try {
   await page.goto(`${baseURL}/dating/entitlements`)
   await page.getByText('测试客户', { exact: true }).waitFor()
   await screenshot(page, 'desktop-entitlements')
+  await page.getByRole('button', { name: '权益详情', exact: true }).click()
+  await page.getByRole('dialog', { name: '权益详情' }).getByText('OPEN', { exact: true }).waitFor()
+  await screenshot(page, 'desktop-entitlement-ledger')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: '一致性检查', exact: true }).click()
+  await page.getByText('权益余额与流水不一致', { exact: true }).waitFor()
+  await screenshot(page, 'desktop-integrity')
+  await page.keyboard.press('Escape')
+  integrityFails = true
+  await page.getByRole('button', { name: '一致性检查', exact: true }).click()
+  await page.getByText('检查未完成', { exact: true }).waitFor()
+  assert.equal(await page.getByText('当前范围未发现异常', { exact: true }).count(), 0)
+  await page.keyboard.press('Escape')
 
   await page.goto(`${baseURL}/dating/serviceOptions`)
   await page.getByRole('button', { name: '新增选项' }).click()
@@ -142,12 +185,18 @@ try {
   await dialog.getByText('多选', { exact: true }).click()
   await dialog.getByText('成功加好友', { exact: true }).click()
   await dialog.getByText('完成见面', { exact: true }).click()
+  await dialog.locator('input[type=file]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: coverBytes })
+  await page.waitForFunction(() => {
+    const img = document.querySelector('.el-upload-list__item-thumbnail')
+    return img?.src.endsWith('/test-cover.png') && img.naturalWidth === 80
+  })
   await screenshot(page, 'desktop-package')
   await dialog.getByRole('button', { name: '确 定' }).click()
   await dialog.waitFor({ state: 'hidden' })
   assert.equal(savedPackage.selectionMode, 'MULTI')
   assert.equal(savedPackage.serviceOptionCodes.length, 2)
   assert.equal(savedPackage.limitServiceTimes, '1')
+  assert.equal(savedPackage.coverImage, coverImage)
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`${baseURL}/dating/orders`)
@@ -164,6 +213,11 @@ try {
   await page.getByRole('button', { name: '新增', exact: true }).click()
   await page.getByRole('dialog', { name: '新增套餐' }).waitFor()
   await screenshot(page, 'mobile-package')
+  await page.keyboard.press('Escape')
+  await page.goto(`${baseURL}/dating/entitlements`)
+  await page.getByRole('button', { name: '权益详情', exact: true }).click()
+  await page.getByRole('dialog', { name: '权益详情' }).getByText('OPEN', { exact: true }).waitFor()
+  await screenshot(page, 'mobile-entitlement-ledger')
   assert.deepEqual(errors, [], 'Uncaught browser exceptions')
   console.log('PASS: create order, validation, confirm payment, entitlement, option, package, desktop/mobile; mock API only')
 } finally { await browser.close() }

@@ -119,6 +119,7 @@ async function fixtures(route) {
     return reply({ data: 1 })
   }
   if (path.endsWith('/retry')) {
+    assert.equal(req.postDataJSON().reason, '已核查并修复异常')
     detail.tasks[0].status = 'DONE'
     detail.tasks[0].outcome = 'DEDUCTED'
     return reply({ data: 1 })
@@ -252,7 +253,10 @@ try {
   detail.tasks = [{ taskId: 7, eventId: 2, userId: 2, status: 'ERROR', attempts: 5, lastError: '处理异常' }]
   await drawer.getByRole('button', { name: '刷新记录' }).click()
   await drawer.getByRole('button', { name: '重试扣次' }).click()
-  await page.locator('.el-message-box').getByRole('button', { name: '确定', exact: true }).click()
+  dialog = page.getByRole('dialog', { name: '重新核算扣次', exact: true })
+  await dialog.getByLabel('重试原因').fill('已核查并修复异常')
+  await dialog.getByRole('button', { name: '确认重新核算', exact: true }).click()
+  await page.locator('.el-message-box').getByRole('button', { name: '确认重试', exact: true }).click()
   await drawer.getByText('处理完成', { exact: true }).waitFor()
   assert.equal(mutations.filter(p => p.endsWith('/retry')).length, 1)
   await page.setViewportSize({ width: 390, height: 844 })

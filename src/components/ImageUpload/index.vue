@@ -2,7 +2,7 @@
   <div class="component-upload-image">
     <el-upload
       multiple
-      :disabled="disabled"
+      :disabled="disabled || (privateArchiveId && (privatePhotosFailed || privatePhotosLoading))"
       :action="uploadImgUrl"
       list-type="picture-card"
       :on-success="handleUploadSuccess"
@@ -17,10 +17,12 @@
       :headers="headers"
       :file-list="fileList"
       :on-preview="handlePictureCardPreview"
+      :on-change="trackUploadPreview"
       :class="{ hide: fileList.length >= limit }"
     >
       <el-icon class="avatar-uploader-icon"><plus /></el-icon>
     </el-upload>
+    <el-alert v-if="privateArchiveId && privatePhotosFailed" title="照片加载失败，当前不可修改照片" type="error" :closable="false" />
     <!-- 上传提示 -->
     <div class="el-upload__tip" v-if="showTip && !disabled">
       请上传
@@ -36,7 +38,7 @@
     <el-dialog
       v-model="dialogVisible"
       title="预览"
-      width="800px"
+      width="min(800px, calc(100vw - 24px))"
       append-to-body
     >
       <img
@@ -51,9 +53,11 @@
 import { getToken } from "@/utils/auth"
 import { isExternal } from "@/utils/validate"
 import Sortable from 'sortablejs'
+import { useArchivePhotos } from '@/composables/useArchivePhotos'
 
 const props = defineProps({
   modelValue: [String, Object, Array],
+  privateArchiveId: Number,
   // 上传接口地址
   action: {
     type: String,
@@ -102,14 +106,40 @@ const uploadList = ref([])
 const dialogImageUrl = ref("")
 const dialogVisible = ref(false)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传的图片服务器地址
-const headers = ref({ Authorization: "Bearer " + getToken() })
+const uploadImgUrl = computed(() => import.meta.env.VITE_APP_BASE_API + props.action)
+const headers = computed(() => ({ Authorization: "Bearer " + getToken() }))
 const fileList = ref([])
+const uploadPreviewUrls = new Set()
+function trackUploadPreview(file) {
+  if (file.raw && file.url?.startsWith('blob:')) uploadPreviewUrls.add(file.url)
+}
+function releaseUploadPreview(file) {
+  if (file?.raw && file.url?.startsWith('blob:')) {
+    URL.revokeObjectURL(file.url)
+    uploadPreviewUrls.delete(file.url)
+    file.url = undefined
+  }
+}
+onBeforeUnmount(() => {
+  uploadPreviewUrls.forEach(url => URL.revokeObjectURL(url))
+  uploadPreviewUrls.clear()
+})
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
 )
+const { photos: privatePhotos, failed: privatePhotosFailed, loading: privatePhotosLoading } = useArchivePhotos(() => ({
+  value: props.privateArchiveId ? props.modelValue : [],
+  archiveId: props.privateArchiveId
+}))
+watch(privatePhotos, photos => {
+  if (props.privateArchiveId) fileList.value = photos.map(photo => ({ ...photo }))
+})
+watch([number, privatePhotosLoading], ([uploads, loading]) => {
+  emit('busy', uploads > 0 || (Boolean(props.privateArchiveId) && loading))
+}, { immediate: true })
 
 watch(() => props.modelValue, val => {
+  if (props.privateArchiveId) return
   if (val) {
     // 首先将值转为数组
     const list = Array.isArray(val) ? val : props.modelValue.split(",")
@@ -172,8 +202,13 @@ function handleExceed() {
 
 // 上传成功回调
 function handleUploadSuccess(res, file) {
+  releaseUploadPreview(file)
   if (res.code === 200) {
-    uploadList.value.push({ name: res.fileName, url: res.url })
+    uploadList.value.push({
+      name: res.fileName,
+      url: props.privateArchiveId ? undefined : res.url,
+      reference: props.privateArchiveId ? res.url : undefined
+    })
     uploadedSuccessfully()
   } else {
     number.value--
@@ -186,6 +221,7 @@ function handleUploadSuccess(res, file) {
 
 // 删除图片
 function handleDelete(file) {
+  if (props.privateArchiveId && (privatePhotosFailed.value || privatePhotosLoading.value)) return false
   const findex = fileList.value.map(f => f.name).indexOf(file.name)
   if (findex > -1 && uploadList.value.length === number.value) {
     fileList.value.splice(findex, 1)
@@ -206,9 +242,12 @@ function uploadedSuccessfully() {
 }
 
 // 上传失败
-function handleUploadError() {
+function handleUploadError(error, file) {
+  releaseUploadPreview(file)
+  number.value--
   proxy.$modal.msgError("上传图片失败")
   proxy.$modal.closeLoading()
+  uploadedSuccessfully()
 }
 
 // 预览
@@ -222,6 +261,10 @@ function listToString(list, separator) {
   let strs = ""
   separator = separator || ","
   for (let i in list) {
+    if (props.privateArchiveId && list[i].reference) {
+      strs += list[i].reference + separator
+      continue
+    }
     if (undefined !== list[i].url && list[i].url.indexOf("blob:") !== 0) {
       strs += list[i].url.replace(baseUrl, "") + separator
     }

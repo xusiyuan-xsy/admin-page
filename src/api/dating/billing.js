@@ -17,3 +17,5 @@ export const cancelOrder = (id, reason) => request({
   url: `/dating/orders/${id}/cancel`, method: 'post', data: { reason }
 })
 export const listEntitlements = params => request({ url: '/dating/entitlements', params })
+export const getEntitlement = id => request({ url: `/dating/entitlements/${id}` })
+export const listIntegrityIssues = params => request({ url: '/dating/integrity-issues', params })

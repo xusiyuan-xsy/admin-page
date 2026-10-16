@@ -6,6 +6,7 @@
       <el-form-item><el-button type="primary" icon="Search" @click="search">查询</el-button><el-button icon="Refresh" @click="reset">重置</el-button></el-form-item>
     </el-form>
     <el-button class="mb8" type="primary" plain icon="Plus" @click="openRecommend" v-hasPermi="['dating:match:add']">创建推荐</el-button>
+    <el-button class="mb8" icon="Warning" @click="$router.push('/dating/recovery/index')" v-hasPermi="['dating:match:query']">扣次异常工作台</el-button>
     <el-table v-loading="loading" :data="rows">
       <el-table-column prop="pairId" label="配对编号" width="100" />
       <el-table-column prop="lowName" label="客户一" min-width="130" />
@@ -119,7 +120,10 @@
                 <el-table-column label="处理结果" width="110"><template #default="{ row }">{{ deductionStatuses[row.outcome] || '-' }}</template></el-table-column>
                 <el-table-column prop="attempts" label="失败次数" width="95" />
                 <el-table-column prop="lastError" label="异常信息" min-width="160" show-overflow-tooltip />
-                <el-table-column label="操作" width="80" fixed="right"><template #default="{ row }"><el-tooltip content="重试扣次"><el-button v-if="row.status === 'ERROR' || row.outcome === 'BLOCKED'" link type="primary" icon="RefreshRight" aria-label="重试扣次" :disabled="isClosed || saving" @click="retry(row)" v-hasPermi="['dating:deduction:retry']" /></el-tooltip></template></el-table-column>
+                <el-table-column label="操作" width="100" fixed="right"><template #default="{ row }">
+                  <el-tooltip content="处理历史"><el-button link type="primary" icon="Clock" aria-label="处理历史" @click="taskHistory.open(row)" /></el-tooltip>
+                  <el-tooltip content="重试扣次"><el-button v-if="row.status === 'ERROR' || (row.status === 'DONE' && row.outcome === 'BLOCKED')" link type="primary" icon="RefreshRight" aria-label="重试扣次" :disabled="isClosed || saving" @click="retryDialog.open({ ...row, customerName: nameOf(row.userId) })" v-hasPermi="['dating:deduction:retry']" /></el-tooltip>
+                </template></el-table-column>
               </el-table>
               <h3 class="section-title">扣次流水</h3>
               <el-table :data="detail.ledger">
@@ -137,6 +141,8 @@
         </template>
       </div>
     </el-drawer>
+    <TaskHistory ref="taskHistory" />
+    <RetryDialog ref="retryDialog" @retried="refreshDetail" />
 
     <el-dialog v-model="dialogOpen" :title="dialogTitle" width="620px" style="max-width: 94vw" :close-on-click-modal="false" append-to-body class="dating-workflow-dialog">
       <el-form ref="formRef" :model="draft" :rules="formRules" :validate-on-rule-change="false" label-width="106px">
@@ -180,6 +186,10 @@
 import * as api from '@/api/dating/workflow'
 import { successPolicy, closeSuccess } from '@/api/dating/success'
 import { checkPermi } from '@/utils/permission'
+import TaskHistory from '../recovery/TaskHistory.vue'
+import RetryDialog from '../recovery/RetryDialog.vue'
+const taskHistory = ref()
+const retryDialog = ref()
 const { proxy } = getCurrentInstance()
 const progresses = { COMMUNICATING: '沟通意向中', IN_PROGRESS: '双方已同意', FOLLOWING: '服务跟进中', REJECTED: '暂不继续', SUCCESS_CLOSED: '成功结案', TERMINATED: '已终止' }
 const serviceStatuses = { NOT_STARTED: '未开通', SERVING: '服务中', NOT_RENEWED: '未续单', SUCCESS_CLOSED: '成功结案' }
@@ -316,18 +326,6 @@ async function submit() {
     await load()
   } catch (error) {
     if (error !== 'cancel' && error !== 'close') console.error('流程记录保存失败', error)
-  } finally { saving.value = false }
-}
-async function retry(row) {
-  if (saving.value) return
-  saving.value = true
-  try {
-    await proxy.$modal.confirm(`确认重新核对 ${nameOf(row.userId)} 的扣次任务 #${row.taskId}？`)
-    await api.retryDeduction(row.taskId)
-    proxy.$modal.msgSuccess('已提交重试')
-    await refreshDetail()
-  } catch (error) {
-    if (error !== 'cancel' && error !== 'close') console.error('重试失败', error)
   } finally { saving.value = false }
 }
 function openRoutePair() {

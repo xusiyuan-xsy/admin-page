@@ -58,7 +58,10 @@
         <el-descriptions-item label="客户">{{ paymentOrder.userName }}</el-descriptions-item>
         <el-descriptions-item label="套餐">{{ paymentOrder.packageName }}</el-descriptions-item>
         <el-descriptions-item label="应收金额">{{ money(paymentOrder.amount) }}元</el-descriptions-item>
+        <el-descriptions-item label="订单号">{{ paymentOrder.orderNo }}</el-descriptions-item>
+        <el-descriptions-item label="服务次数">{{ paymentOrder.serviceTimes }}</el-descriptions-item>
       </el-descriptions>
+      <RuleSnapshot :snapshot="paymentOrder.ruleSnapshot" />
       <el-form ref="paymentRef" :model="payment" :rules="paymentRules" label-width="100px">
         <el-form-item label="实收金额" prop="paidAmount"><el-input-number v-model="payment.paidAmount" :min="0.01" :max="99999999.99" :precision="2" controls-position="right" /></el-form-item>
         <el-form-item label="收款方式" prop="paymentMethod"><el-select v-model="payment.paymentMethod"><el-option v-for="(label, value) in methods" :key="value" :value="value" :label="label" /></el-select></el-form-item>

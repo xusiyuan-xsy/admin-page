@@ -72,7 +72,9 @@ yarn dev
 18. 连接池监视：监视当前系统数据库连接池状态，可进行分析SQL找出系统性能瓶颈。
 
 ## 在线体验
-
+Start-Service MYSQL80
+cd D:\后台项目\admin-system-api
+java -jar ruoyi-admin/target/ruoyi-admin.jar --server.address=127.0.0.1 --server.port=8082 --dating.success.enabled=false
 - admin/admin123  
 - 陆陆续续收到一些打赏，为了更好的体验已用于演示服务器升级。谢谢各位小伙伴。
 
