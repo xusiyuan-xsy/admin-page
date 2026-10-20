@@ -23,3 +23,11 @@ export async function hydrateArchiveRegions(archive, loadChildren) {
   ])
   return { ...archive, currentCityCode, hometownCode }
 }
+
+export async function hydrateRequirementRegions(requirement, loadChildren) {
+  const resolved = await hydrateArchiveRegions({
+    currentCity: requirement.cityRequire,
+    hometown: requirement.hometownRequire
+  }, loadChildren)
+  return { cityRequireCode: resolved.currentCityCode, hometownRequireCode: resolved.hometownCode }
+}

@@ -52,7 +52,10 @@ async function fixtures(route) {
     return reply({ url: coverImage, fileName: 'cover.png' })
   }
   if (path === '/dating/service-options') {
-    if (req.method() === 'POST') savedOption = req.postDataJSON()
+    if (req.method() === 'POST') {
+      savedOption = req.postDataJSON()
+      serviceOptions.push({ ...savedOption, optionId: 3, code: 'OPTION_123456789012345678901234567890123456789' })
+    }
     return reply({ data: serviceOptions })
   }
   if (path.startsWith('/dating/service-options/')) { savedOption = req.postDataJSON(); return reply({}) }
@@ -170,12 +173,34 @@ try {
   await page.goto(`${baseURL}/dating/serviceOptions`)
   await page.getByRole('button', { name: '新增选项' }).click()
   dialog = page.getByRole('dialog', { name: '新增服务选项' })
-  await dialog.getByLabel('选项编码').fill('FOLLOW_UP')
+  assert.equal(await dialog.getByLabel('选项编码').count(), 0)
+  await dialog.getByRole('button', { name: '保存', exact: true }).click()
+  await dialog.getByText('请输入选项名称', { exact: true }).waitFor()
   await dialog.getByLabel('选项名称').fill('完成回访')
   await dialog.getByLabel('完成标准').fill('红娘已完成双方回访并记录反馈')
+  await screenshot(page, 'desktop-service-option-create')
   await dialog.getByRole('button', { name: '保存', exact: true }).click()
   await dialog.waitFor({ state: 'hidden' })
-  assert.equal(savedOption.code, 'FOLLOW_UP')
+  assert.equal(Object.hasOwn(savedOption, 'code'), false)
+  await page.getByText('OPTION_123456789012345678901234567890123456789', { exact: true }).waitFor()
+  await page.getByRole('row').filter({ hasText: '完成回访' }).getByRole('button', { name: '编辑选项' }).click()
+  dialog = page.getByRole('dialog', { name: '编辑服务选项' })
+  assert.equal(await dialog.getByLabel('选项编码').inputValue(), 'OPTION_123456789012345678901234567890123456789')
+  assert.equal(await dialog.getByLabel('选项编码').getAttribute('readonly'), '')
+  await dialog.getByLabel('选项名称').fill('回访确认')
+  await screenshot(page, 'desktop-service-option-edit')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await screenshot(page, 'mobile-service-option-edit')
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await dialog.getByRole('button', { name: '保存', exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  assert.equal(savedOption.code, 'OPTION_123456789012345678901234567890123456789')
+  assert.equal(savedOption.name, '回访确认')
+
+  await page.getByRole('row').filter({ hasText: 'FRIEND_ADDED' }).getByRole('button', { name: '编辑选项' }).click()
+  dialog = page.getByRole('dialog', { name: '编辑服务选项' })
+  assert.equal(await dialog.getByLabel('选项编码').inputValue(), 'FRIEND_ADDED')
+  await dialog.getByRole('button', { name: '取消', exact: true }).click()
 
   await page.goto(`${baseURL}/dating/packages`)
   await page.getByRole('button', { name: '新增', exact: true }).click()

@@ -40,7 +40,7 @@
             <el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['system:payingUsers:import']">导入</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:payingUsers:export']">导出</el-button>
+            <el-button type="warning" plain icon="Download" :loading="exporting" @click="handleExport" v-hasPermi="['system:payingUsers:export']">导出</el-button>
           </el-col>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="xxxxxxxx"></right-toolbar>
         </el-row>
@@ -354,7 +354,12 @@
 import { getToken } from "@/utils/auth"
 import useAppStore from '@/store/modules/app'
 import { resetUserPwd, deptTreeSelect } from "@/api/system/user"
-import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser } from "@/api/system/payingUser"
+import { listPayingUser, getPayingUser, addPayingUser, updatePayingUser, delPayingUser,
+  estimatePayingUserExport, downloadPayingUserExport } from "@/api/system/payingUser"
+import { h } from 'vue'
+import { ElMessageBox, ElLoading } from 'element-plus'
+import { saveAs } from 'file-saver'
+import { formatExportBytes, payingUserExportExtension } from '@/utils/payingUserExport'
 import RequirementDialog from './requirementDialog.vue'
 import { checkPermi } from '@/utils/permission'
 import QueryMatchingDialog from './queryMatchingDialog.vue'
@@ -365,6 +370,7 @@ import { hydrateArchiveRegions } from '@/utils/archiveRegions'
 const router = useRouter()
 const appStore = useAppStore()
 const { proxy } = getCurrentInstance()
+const exporting = ref(false)
 
 const requirementDialog = reactive({
   visible: false,
@@ -575,10 +581,46 @@ function handleDelete(row) {
 }
 
 /** 导出按钮操作 */
-function handleExport() {
-  proxy.download("system/payingUsers/export", {
-    ...queryParams.value,
-  },`payingUser_${new Date().getTime()}.xlsx`)
+async function handleExport() {
+  if (exporting.value) return
+  exporting.value = true
+  let loading
+  try {
+    // Keep the same filters even if the list changes while confirmation is open.
+    const params = JSON.parse(JSON.stringify(proxy.addDateRange({ ...queryParams.value }, dateRange.value)))
+    delete params.pageNum
+    delete params.pageSize
+    const { data } = await estimatePayingUserExport(params)
+    const details = [
+      `用户：${data.userCount} 人；可读取照片：${data.photoCount} 张`,
+      `照片文件合计：约 ${formatExportBytes(data.imageBytes)}（非最终下载体积）`,
+      data.partCount > 1
+        ? `预计 ${data.partCount} 个 Excel，打包为 ZIP`
+        : '预计 1 个 Excel',
+      `每份最多 ${data.maxUsersPerPart} 人、${formatExportBytes(data.maxPartImageBytes)} 照片；同一用户不拆分`
+    ]
+    if (data.unavailablePhotoCount || data.legacyPhotoCount) {
+      details.push(`缺失或无效照片：${data.unavailablePhotoCount} 张；未迁移历史照片：${data.legacyPhotoCount} 张`)
+    }
+    await ElMessageBox.confirm(h('div', details.map(text => h('p', text))), '导出预估', {
+      confirmButtonText: '开始导出',
+      cancelButtonText: '取消',
+      closeOnClickModal: false
+    })
+    loading = ElLoading.service({ lock: true, text: '正在生成导出文件，请稍候' })
+    const blob = await downloadPayingUserExport(params)
+    try {
+      const extension = await payingUserExportExtension(blob)
+      saveAs(blob, `payingUser_${Date.now()}.${extension}`)
+    } catch (error) {
+      proxy.$modal.msgError(error.message)
+    }
+  } catch {
+    // Cancellation needs no toast; request failures are handled by the interceptor.
+  } finally {
+    loading?.close()
+    exporting.value = false
+  }
 }
 
 /** 更多操作 */
@@ -816,6 +858,8 @@ function handleQueryMatching(row) {
     hometownRequire: requirement.hometownRequire,
     noTattoo: requirement.noTattoo,
     payingId: row.id,
+    sourceName: row.name,
+    otherRequire: requirement.otherRequire,
     smokeHabit: requirement.smokeHabit
   }
   queryMatchingDialog.visible = true

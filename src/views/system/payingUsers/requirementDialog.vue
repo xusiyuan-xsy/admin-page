@@ -8,29 +8,35 @@
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px" class="requirement-form">
+    <el-alert v-if="regionError" :title="regionError" type="warning" :closable="false" />
+    <el-alert v-if="configError" :title="configError" type="error" :closable="false">
+      <el-button link type="primary" @click="loadForm">重新加载</el-button>
+    </el-alert>
+    <el-form :model="form" :disabled="regionLoading" :rules="rules" ref="formRef" label-width="120px" class="requirement-form">
       <el-row :gutter="16">
-        <el-form-item label="出生年份范围" style="margin-bottom: 20px;margin-left: 6px;">
-          <div style="display: flex; align-items: flex-start; gap: 10px; width: 100%; min-width: 0">
-            <el-form-item prop="ageMin" style="margin-bottom: 0; flex: 1">
-              <el-input-number v-model="form.ageMin" :min="1900" :max="new Date().getFullYear()" controls-position="right" placeholder="例如1999" style="width: 100%" @change="formRef?.validateField('ageMax')" />
-            </el-form-item>
-            <span style="line-height: 32px; color: #606266">~</span>
-            <el-form-item prop="ageMax" style="margin-bottom: 0; flex: 1">
-              <el-input-number v-model="form.ageMax" :min="1900" :max="new Date().getFullYear()" controls-position="right" placeholder="例如2004" style="width: 100%" @change="formRef?.validateField('ageMin')" />
-            </el-form-item>
-          </div>
-        </el-form-item>
+        <el-col :span="24">
+          <el-form-item label="出生年份范围" :required="requiredFields.includes('ageMin') || requiredFields.includes('ageMax')">
+            <div class="birth-year-range">
+              <el-form-item prop="ageMin" class="birth-year-field">
+                <el-input-number v-model="form.ageMin" :min="inputMin(form.ageMin, limits.ageMin)" :max="inputMax(form.ageMin, limits.ageMax)" :precision="0" controls-position="right" placeholder="最早出生年份" aria-label="最早出生年份" style="width: 100%" @change="formRef?.validateField('ageMax')" />
+              </el-form-item>
+              <span class="birth-year-separator" aria-hidden="true">~</span>
+              <el-form-item prop="ageMax" class="birth-year-field">
+                <el-input-number v-model="form.ageMax" :min="inputMin(form.ageMax, limits.ageMin)" :max="inputMax(form.ageMax, limits.ageMax)" :precision="0" controls-position="right" placeholder="最晚出生年份" aria-label="最晚出生年份" style="width: 100%" @change="formRef?.validateField('ageMin')" />
+              </el-form-item>
+            </div>
+          </el-form-item>
+        </el-col>
       </el-row>
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="最低身高(cm)" prop="heightMin">
-            <el-input-number v-model="form.heightMin" :min="100" :max="250" controls-position="right" style="width: 100%" />
+            <el-input-number v-model="form.heightMin" :min="inputMin(form.heightMin, limits.heightMin)" :max="inputMax(form.heightMin, limits.heightMax)" :precision="0" controls-position="right" style="width: 100%" @change="formRef?.validateField('heightMax')" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="最高身高(cm)" prop="heightMax">
-            <el-input-number v-model="form.heightMax" :min="100" :max="250" controls-position="right" style="width: 100%" />
+            <el-input-number v-model="form.heightMax" :min="inputMin(form.heightMax, limits.heightMin)" :max="inputMax(form.heightMax, limits.heightMax)" :precision="0" controls-position="right" style="width: 100%" @change="formRef?.validateField('heightMin')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -38,14 +44,14 @@
         <el-col :span="12">
           <el-form-item label="吸烟要求" prop="smokeHabit">
             <el-select v-model="form.smokeHabit" placeholder="选择" clearable style="width: 100%">
-              <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              <el-option v-for="opt in habitOptions.filter(o => o.value || !requiredFields.includes('smokeHabit'))" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="饮酒要求" prop="drinkHabit">
             <el-select v-model="form.drinkHabit" placeholder="选择" clearable style="width: 100%">
-              <el-option v-for="opt in habitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              <el-option v-for="opt in habitOptions.filter(o => o.value || !requiredFields.includes('drinkHabit'))" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -89,7 +95,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="家乡要求" prop="hometownRequire">
-            <region-cascader v-model="form.hometownRequireCode" v-model:name="form.hometownRequire" :check-strictly="true" placeholder="选择家乡要求 省/市/区" />
+            <region-cascader v-model="form.hometownRequireCode" v-model:name="form.hometownRequire" :check-strictly="true" :placeholder="form.hometownRequire || '选择家乡要求 省/市/区'" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -97,15 +103,15 @@
         <el-col :span="12">
           <el-form-item label="是否接受异地" prop="acceptLongDist">
             <el-select v-model="form.acceptLongDist" placeholder="选择" clearable style="width: 100%">
-              <el-option label="不限" value="" />
+              <el-option v-if="!requiredFields.includes('acceptLongDist')" label="不限" value="" />
               <el-option label="否" value="0" />
               <el-option label="是" value="1" />
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12" v-if="form.acceptLongDist === '0'">
-          <el-form-item label="现居城市要求" prop="cityRequire" required>
-            <region-cascader v-model="form.cityRequireCode" v-model:name="form.cityRequire" :check-strictly="true" placeholder="选择现居城市要求 省/市/区" />
+        <el-col :span="12" v-if="form.acceptLongDist === '0' || requiredFields.includes('cityRequire')">
+          <el-form-item label="现居城市要求" prop="cityRequire" :required="form.acceptLongDist === '0' || requiredFields.includes('cityRequire')">
+            <region-cascader v-model="form.cityRequireCode" v-model:name="form.cityRequire" :check-strictly="true" :placeholder="form.cityRequire || '选择现居城市要求 省/市/区'" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -126,7 +132,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="primary" @click="submitForm" :loading="submitting">确定</el-button>
+        <el-button type="primary" @click="submitForm" :disabled="regionLoading || !!configError" :loading="submitting">确定</el-button>
         <el-button @click="handleClose">取消</el-button>
       </div>
     </template>
@@ -136,6 +142,10 @@
 <script setup>
 import { addPayingRequirement, updatePayingRequirement } from '@/api/system/payingUser'
 import RegionCascader from '@/components/RegionCascader/index.vue'
+import { listRegion } from '@/api/system/region'
+import { hydrateRequirementRegions } from '@/utils/archiveRegions'
+import { getActiveMatchmakerConfig } from '@/api/dating/matchmakerConfig'
+import { requirementLimits, applyRequirementDefaults, requirementFieldError } from '@/utils/matchmakerConfig'
 
 const props = defineProps({
   modelValue: {
@@ -196,54 +206,73 @@ const defaultForm = () => ({
 })
 
 const form = ref(defaultForm())
+const regionLoading = ref(false)
+const regionError = ref('')
+let regionRequest = 0
+const activeConfig = ref(null)
+const configError = ref('')
+const currentYear = ref(new Date().getFullYear())
+const fieldLabels = ref({})
+const requiredFields = computed(() => activeConfig.value?.requiredFields || [])
+const limits = computed(() => requirementLimits(activeConfig.value, currentYear.value))
+// Keep existing out-of-range values visible until the user corrects them; do not silently clamp saved needs.
+const inputMin = (value, min) => value == null ? min : Math.min(value, min)
+const inputMax = (value, max) => value == null ? max : Math.max(value, max)
 
-const rules = {
-  ageMin: [
-    {
-      validator: (rule, value, callback) => {
-        if (value != null && form.value.ageMax != null && value > form.value.ageMax) {
-          callback(new Error('最小出生年份不能大于最大出生年份'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'change'
-    }
-  ],
-  ageMax: [
-    {
-      validator: (rule, value, callback) => {
-        if (value != null && form.value.ageMin != null && value < form.value.ageMin) {
-          callback(new Error('最大出生年份不能小于最小出生年份'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'change'
-    }
-  ],
-  heightMax: [{
-    validator: (rule, value, callback) => {
-      callback(value != null && form.value.heightMin != null && value < form.value.heightMin
-        ? new Error('最高身高不能小于最低身高') : undefined)
-    },
-    trigger: 'change'
-  }],
-  cityRequire: [{ required: true, message: '选择现居城市要求', trigger: 'change' }]
-}
+const rules = computed(() => Object.fromEntries(
+  [...new Set(['ageMin', 'ageMax', 'heightMin', 'heightMax', 'cityRequire', ...requiredFields.value])]
+    .map(field => [field, [{
+      required: requiredFields.value.includes(field) || (field === 'cityRequire' && form.value.acceptLongDist === '0'),
+      validator: (_, value, done) => {
+        const message = requirementFieldError(field, value, form.value, activeConfig.value, currentYear.value, fieldLabels.value)
+        done(message ? new Error(message) : undefined)
+      }, trigger: ['blur', 'change']
+    }]])
+))
 
-onMounted(() => {
-  if (props.requirement) {
-    form.value = { ...props.requirement }
+async function loadForm() {
+  const current = ++regionRequest
+  if (!props.modelValue) return
+  form.value = { ...defaultForm(), ...props.requirement }
+  regionLoading.value = true
+  regionError.value = ''
+  configError.value = ''
+  activeConfig.value = null
+  try {
+    try {
+      const { data } = await getActiveMatchmakerConfig()
+      if (current !== regionRequest) return
+      activeConfig.value = data.config
+      currentYear.value = data.currentYear
+      fieldLabels.value = data.fields
+      if (!isEdit.value) form.value = applyRequirementDefaults(form.value, data.config, data.currentYear)
+    } catch {
+      if (current === regionRequest) configError.value = '红娘功能配置加载失败，暂不能保存需求'
+    }
+    if (current !== regionRequest) return
+    const codes = await hydrateRequirementRegions(form.value, parent => listRegion(parent).then(res => res.data || []))
+    if (current !== regionRequest) return
+    Object.assign(form.value, codes)
+    if ((form.value.cityRequire && !codes.cityRequireCode) || (form.value.hometownRequire && !codes.hometownRequireCode))
+      regionError.value = '部分地区暂未解析，已保留原需求名称'
+  } catch {
+    if (current === regionRequest) regionError.value = '地区加载失败，已保留原需求名称'
+  } finally {
+    if (current === regionRequest) {
+      regionLoading.value = false
+      nextTick(() => formRef.value?.clearValidate())
+    }
   }
-})
+}
+watch(() => props.modelValue, loadForm, { immediate: true })
 
 function submitForm() {
+  if (submitting.value || regionLoading.value || configError.value) return
   formRef.value.validate(valid => {
     if (!valid) return
     submitting.value = true
     const data = { ...form.value, payingId: props.payingId }
-    if (data.acceptLongDist !== '0') {
+    if (data.acceptLongDist !== '0' && !requiredFields.value.includes('cityRequire')) {
       data.cityRequire = ''
       data.cityRequireCode = ''
     }
@@ -268,6 +297,30 @@ function handleClose() {
 
 <style scoped>
 .requirement-form :deep(.el-form-item__content) { min-width: 0; }
+.requirement-form :deep(.el-form-item__error) {
+  position: static;
+  flex-basis: 100%;
+  padding-top: 4px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.birth-year-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.requirement-form .birth-year-field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+.birth-year-separator {
+  line-height: var(--el-component-size, 32px);
+  color: var(--el-text-color-secondary);
+  text-align: center;
+}
 @media (max-width: 600px) {
   .requirement-form :deep(.el-col-12) { max-width: 100%; flex-basis: 100%; }
   .requirement-form :deep(.el-form-item) { display: block; width: 100%; }

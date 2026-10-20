@@ -1,5 +1,10 @@
 <template>
   <div class="user-card">
+    <div class="user-card__heading">
+      <strong>{{ user.name || '未填写姓名' }}</strong>
+      <span>#{{ user.id }} · {{ getSexLabel(user.sex) }}</span>
+    </div>
+    <div v-if="$slots.default" class="user-card__matching"><slot /></div>
     <!-- 头像区域 -->
     <div class="user-card__avatar-wrap">
       <div class="user-card__avatar">
@@ -55,7 +60,7 @@
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">家庭成员</span>
-          <span class="user-card__info-value" :title="user.familyDesc">{{ user.familyDesc || '—' }}</span>
+          <span class="user-card__info-value" :title="user.familyMembers">{{ user.familyMembers || '—' }}</span>
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">家乡</span>
@@ -79,7 +84,7 @@
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">兴趣爱好</span>
-          <span class="user-card__info-value" :title="user.hobby">{{ user.hobby || '—' }}</span>
+          <span class="user-card__info-value" :title="user.hobbies">{{ user.hobbies || '—' }}</span>
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">月收入</span>
@@ -89,7 +94,7 @@
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">个人优点</span>
-          <span class="user-card__info-value" :title="user.personalAdvantage">{{ user.personalAdvantage || '—' }}</span>
+          <span class="user-card__info-value" :title="user.advantages">{{ user.advantages || '—' }}</span>
         </div>
         <div class="user-card__info-item">
           <span class="user-card__info-label">抽烟情况</span>
@@ -170,13 +175,16 @@ function formatAcceptLongDist(val) {
 <style scoped>
 .user-card {
   background: #fff;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s;
   display: flex;
   flex-direction: column;
 }
+.user-card__heading { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; overflow-wrap: anywhere; }
+.user-card__heading span { font-size: 12px; color: #606266; }
+.user-card__matching { padding: 0 16px 12px; }
 .user-card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.16);
 }
@@ -244,10 +252,11 @@ function formatAcceptLongDist(val) {
 }
 .user-card__info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px 8px;
 }
 .user-card__info-item {
+  min-width: 0;
   display: flex;
   flex-direction: row;
   align-items: baseline;

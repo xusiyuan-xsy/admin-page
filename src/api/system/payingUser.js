@@ -1,5 +1,28 @@
 import request from '@/utils/request'
-import { parseStrEmpty } from "@/utils/ruoyi";
+import { parseStrEmpty, tansParams } from "@/utils/ruoyi";
+
+export function estimatePayingUserExport(data) {
+  return request({
+    url: '/system/payingUsers/export/estimate',
+    method: 'post',
+    data,
+    transformRequest: [tansParams],
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', repeatSubmit: false },
+    timeout: 60000
+  })
+}
+
+export function downloadPayingUserExport(data) {
+  return request({
+    url: '/system/payingUsers/export',
+    method: 'post',
+    data,
+    transformRequest: [tansParams],
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', repeatSubmit: false },
+    responseType: 'blob',
+    timeout: 600000
+  })
+}
 
 // 付费用户统计（首页看板）
 export function getPayingUsersStats() {

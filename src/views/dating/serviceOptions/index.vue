@@ -24,7 +24,7 @@
     </el-table>
     <el-dialog v-model="open" :title="form.optionId ? '编辑服务选项' : '新增服务选项'" width="560px" style="max-width: 94vw" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-        <el-form-item label="选项编码" prop="code"><el-input v-model="form.code" :disabled="!!form.optionId" maxlength="50" placeholder="例如 FRIEND_ADDED" /></el-form-item>
+        <el-form-item v-if="form.optionId" label="选项编码"><el-input :model-value="form.code" readonly /></el-form-item>
         <el-form-item label="选项名称" prop="name"><el-input v-model="form.name" maxlength="100" /></el-form-item>
         <el-form-item label="完成标准" prop="completionStandard"><el-input v-model="form.completionStandard" type="textarea" :rows="4" maxlength="500" show-word-limit /></el-form-item>
         <el-form-item label="状态" prop="status"><el-radio-group v-model="form.status"><el-radio value="0">启用</el-radio><el-radio value="1">停用</el-radio></el-radio-group></el-form-item>
@@ -45,7 +45,6 @@ const open = ref(false)
 const form = ref({})
 const formRef = ref()
 const rules = {
-  code: [{ required: true, pattern: /^[A-Z][A-Z0-9_]{1,49}$/, message: '编码为2-50位大写字母、数字或下划线，以字母开头', trigger: 'blur' }],
   name: [{ required: true, whitespace: true, message: '请输入选项名称', trigger: 'blur' }],
   completionStandard: [{ required: true, whitespace: true, message: '请输入完成标准', trigger: 'blur' }]
 }
@@ -55,7 +54,7 @@ async function load() {
   finally { loading.value = false }
 }
 function edit(row) {
-  form.value = row ? { ...row } : { code: '', name: '', completionStandard: '', status: '0' }
+  form.value = row ? { ...row } : { name: '', completionStandard: '', status: '0' }
   open.value = true
   nextTick(() => formRef.value?.clearValidate())
 }
